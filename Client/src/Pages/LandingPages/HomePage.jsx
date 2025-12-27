@@ -107,14 +107,14 @@ const HomePage = () => {
       <LandingNavbar />
       <div className=" space-y-15">
         <div className=" mx-20 lg:flex justify-around ">
-          <div className="flex flex-col justify-center  space-y-5 p-24 lg:w-1/2">
+          <div className="flex flex-col justify-center  space-y-2 p-16 lg:w-1/2">
             <p className="text-3xl 2xl:text-5xl  ">
               Never Stop
-              <span className="ml-2 p-2 font-bold text-white bg-yellow  rounded-bl-4xl rounded-tr-4xl">
+              <span className="ml-2 p-1 font-bold text-white bg-yellow  rounded-bl-4xl rounded-tr-4xl">
                 Learning
               </span>
             </p>
-            <p className="text-3xl  mt-2 2xl:text-5xl 2xl:mt-5">
+            <p className="text-2xl   2xl:text-5xl ">
               {" "}
               Life <span className="font-bold">Never Stop</span> Teaching
             </p>
@@ -155,11 +155,11 @@ const HomePage = () => {
             <p className="text-purple ml-5">Get More About Us</p>
             <p className="text-3xl 2xl:text-5xl  ">
               Thousand Of Top
-              <span className="ml-2 p-2 font-bold text-white bg-yellow  rounded-bl-4xl rounded-tr-4xl">
+              <span className="ml-2 px-1   font-bold text-white bg-yellow  rounded-bl-4xl rounded-tr-4xl">
                 Courses
               </span>
             </p>
-            <p className="text-3xl 2xl:text-5xl  mt-2 2xl:mt-5">Now in One Place</p>
+            <p className="text-3xl 2xl:text-5xl  ">Now in One Place</p>
             <p className="text-gray-400  text-lg mt-5 ">
               Access thousands of high-quality courses in one platform.
               <br /> Learn new skills, grow your career, and explore
