@@ -5,7 +5,11 @@ import { IoIosArrowForward } from "react-icons/io";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { FaArrowRightLong } from "react-icons/fa6";
+import { useNavigate } from "react-router-dom";
+
 const StudentSignup = () => {
+  const navigate = useNavigate();
+
   const validationSchema = Yup.object({
     firstName: Yup.string()
       .trim()
@@ -35,6 +39,7 @@ const StudentSignup = () => {
       .oneOf([Yup.ref("password"), null], "Passwords must match")
       .required("Confirm Password is required"),
   });
+
   return (
     <div>
       <LandingNavbar />
@@ -43,13 +48,14 @@ const StudentSignup = () => {
           <div className="text-4xl font-bold">Student SignUp</div>
           <div className="font-semibold text-gray-400 flex space-x-2 items-center">
             <a href="/">Home</a> <IoIosArrowForward />{" "}
-            <p className="text-purple">Sign Up</p>{" "}
+            <p className="text-purple">Sign Up</p>
           </div>
         </div>
+
         <div className="w-full space-y-6 my-auto">
-          <div className=" mx-auto w-[40%]">
-            <p className=" text-3xl font-bold">Create Your Account</p>
-            <p className=" text-lg font-semibold text-gray-400">
+          <div className="mx-auto w-[40%]">
+            <p className="text-3xl font-bold">Create Your Account</p>
+            <p className="text-lg font-semibold text-gray-400">
               Hey there! Ready to join the LearnLab? We just need a few details
               from you to get started. Let's do this!
             </p>
@@ -64,23 +70,50 @@ const StudentSignup = () => {
               confirmPassword: "",
             }}
             validationSchema={validationSchema}
-            onSubmit={(values, { resetForm }) => {
-              console.log("Form submitted:", values);
-              resetForm();
+            onSubmit={async (values, { resetForm, setSubmitting }) => {
+              setSubmitting(true);
+              try {
+                const response = await fetch(
+                  "http://localhost:5000/api/auth/signup",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(values),
+                  }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                  alert(data.message || "Something went wrong!");
+                  return;
+                }
+
+                alert("Registration successful!");
+                resetForm();
+                navigate("/"); // redirect to home
+              } catch (error) {
+                console.error(error);
+                alert("Server error");
+              } finally {
+                setSubmitting(false);
+              }
             }}
           >
             {({ isSubmitting }) => (
-              <Form className=" mx-auto w-[40%] mb-10 ">
+              <Form className="mx-auto w-[40%] mb-10">
                 <div className="grid grid-cols-2 space-x-4 mb-10">
-                  <div className="">
-                    <label className="font-semibold ">
+                  <div>
+                    <label className="font-semibold">
                       First Name <span className="text-red-500">*</span>
                     </label>
                     <Field
                       type="text"
                       name="firstName"
-                      placeholder="First Name "
-                      className="w-full p-2 border border-gray-300 rounded-lg  placeholder-gray-400 "
+                      placeholder="First Name"
+                      className="w-full p-2 border border-gray-300 rounded-lg placeholder-gray-400"
                     />
                     <ErrorMessage
                       name="firstName"
@@ -88,15 +121,16 @@ const StudentSignup = () => {
                       className="text-red-500 text-sm"
                     />
                   </div>
-                  <div className="">
-                    <label className="font-semibold ">
+
+                  <div>
+                    <label className="font-semibold">
                       Last Name <span className="text-red-500">*</span>
                     </label>
                     <Field
                       type="text"
                       name="lastName"
-                      placeholder="Last Name "
-                      className="w-full p-2 border border-gray-300 rounded-lg  placeholder-gray-400 "
+                      placeholder="Last Name"
+                      className="w-full p-2 border border-gray-300 rounded-lg placeholder-gray-400"
                     />
                     <ErrorMessage
                       name="lastName"
@@ -105,15 +139,16 @@ const StudentSignup = () => {
                     />
                   </div>
                 </div>
+
                 <div className="mb-10">
-                  <label className="font-semibold ">
+                  <label className="font-semibold">
                     Email <span className="text-red-500">*</span>
                   </label>
                   <Field
                     type="email"
                     name="email"
-                    placeholder="E-mail "
-                    className="w-full p-2 border border-gray-300 rounded-lg  placeholder-gray-400 "
+                    placeholder="E-mail"
+                    className="w-full p-2 border border-gray-300 rounded-lg placeholder-gray-400"
                   />
                   <ErrorMessage
                     name="email"
@@ -123,14 +158,14 @@ const StudentSignup = () => {
                 </div>
 
                 <div className="mb-10">
-                  <label className="font-semibold ">
+                  <label className="font-semibold">
                     Password <span className="text-red-500">*</span>
                   </label>
                   <Field
-                    type="text"
+                    type="password"
                     name="password"
                     placeholder="Password"
-                    className="w-full p-2 border border-gray-300 rounded-lg  placeholder-gray-400 "
+                    className="w-full p-2 border border-gray-300 rounded-lg placeholder-gray-400"
                   />
                   <ErrorMessage
                     name="password"
@@ -138,15 +173,16 @@ const StudentSignup = () => {
                     className="text-red-500 text-sm"
                   />
                 </div>
+
                 <div className="mb-10">
-                  <label className="font-semibold ">
+                  <label className="font-semibold">
                     Confirm Password <span className="text-red-500">*</span>
                   </label>
                   <Field
-                    type="text"
+                    type="password"
                     name="confirmPassword"
                     placeholder="Confirm Password"
-                    className="w-full p-2 border border-gray-300 rounded-lg  placeholder-gray-400 "
+                    className="w-full p-2 border border-gray-300 rounded-lg placeholder-gray-400"
                   />
                   <ErrorMessage
                     name="confirmPassword"
@@ -158,7 +194,7 @@ const StudentSignup = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className=" w-full shadow-lg shadow-blue hover:shadow-none flex items-center justify-center rounded-full bg-yellow   mt-10 w-fit py-3 font-semibold  hover:bg-purple text-black hover:text-white  transition delay-100 duration-150 ease-in-out hover:-translate-y-1 hover:scale-100 "
+                  className="w-full shadow-lg shadow-blue hover:shadow-none flex items-center justify-center rounded-full bg-yellow mt-10 w-fit py-3 font-semibold hover:bg-purple text-black hover:text-white transition delay-100 duration-150 ease-in-out hover:-translate-y-1 hover:scale-100"
                 >
                   {isSubmitting ? "Submitting..." : "Sign Up"}
                   <p className="ml-4">
@@ -169,8 +205,9 @@ const StudentSignup = () => {
             )}
           </Formik>
         </div>
-        <div className="flex justify-center mb-10 ">
-          <p className="font-semibold text-gray-400 ">
+
+        <div className="flex justify-center mb-10">
+          <p className="font-semibold text-gray-400">
             Already have an account?
           </p>
           <a
@@ -181,6 +218,7 @@ const StudentSignup = () => {
           </a>
         </div>
       </div>
+
       <LandingFooter />
     </div>
   );

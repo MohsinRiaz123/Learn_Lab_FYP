@@ -1,98 +1,129 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-
-// Generate JWT Token
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '30d',
-  });
-};
-
-// Register user
-exports.register = async (req, res) => {
+import User from "../models/user.js";
+import bcrypt from "bcryptjs";
+import fs from "fs";
+import path from "path";
+export const registerStudent = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, role, latestDegree } = req.body;
+    const { firstName, lastName, email, password } = req.body;
 
-    // Check if user exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+    // Validate request
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Create user
+    // Check existing user
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Save user
     const user = await User.create({
       firstName,
       lastName,
       email,
-      password,
-      role,
-      latestDegree
+      password: hashedPassword
     });
-
-    // Generate token
-    const token = generateToken(user._id);
 
     res.status(201).json({
-      success: true,
-      token,
+      message: "Student registered successfully",
       user: {
         id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
         email: user.email,
-        role: user.role,
-        latestDegree: user.latestDegree
+        role: user.role
       }
     });
+
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Login user
-exports.login = async (req, res) => {
+
+// Instructor Registration  
+
+export const registerInstructor = async (req, res) => {
+  try {
+    console.log("File:", req.file); // debug Multer file upload
+    console.log("Body:", req.body);  // debug form data
+
+    const { firstName, lastName, email, password, role } = req.body;
+
+    if (!firstName || !lastName || !email || !password || !req.file) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Check if email already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+
+    // Generate instructor number
+    const instructorCount = await User.countDocuments({ role: "instructor" });
+    const instructorNumber = instructorCount + 1; // sequential number
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create user without document first
+    const newInstructor = await User.create({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      role,
+      instructorNumber,
+    });
+
+    // Rename file to instructorNumber
+    const ext = path.extname(req.file.originalname);
+    const newFilename = `${instructorNumber}${ext}`;
+    const oldPath = req.file.path;
+    const newPath = path.join("uploads", newFilename);
+
+    fs.renameSync(oldPath, newPath);
+
+    // Update user document with PDF filename
+    newInstructor.document = newFilename;
+    await newInstructor.save();
+
+    return res.status(201).json({
+      message: "Instructor registered",
+      instructor: newInstructor,
+    });
+
+  } catch (error) {
+    console.error("Error in registerInstructor:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// Login
+export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate email and password
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Please provide email and password' });
-    }
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: "Invalid email or password" });
 
-    // Check for user
-    const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ message: "Invalid email or password" });
 
-    // Check password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    // Generate token
-    const token = generateToken(user._id);
-
+    // Return user data (role, id, etc)
     res.status(200).json({
-      success: true,
-      token,
-      user: {
-        id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role,
-        latestDegree: user.latestDegree
-      }
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    });
+    res.status(500).json({ message: error.message });
   }
 };

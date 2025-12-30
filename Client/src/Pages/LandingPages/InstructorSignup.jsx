@@ -1,11 +1,16 @@
-import React,{ useRef } from "react";
+import React, { useRef } from "react";
 import LandingNavbar from "../../Components/LandingNavbar";
 import LandingFooter from "../../Components/LandingFooter";
 import { IoIosArrowForward } from "react-icons/io";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { FaArrowRightLong } from "react-icons/fa6";
+import { useNavigate } from "react-router-dom";
+
 const InstructorSignup = () => {
+  const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+
   const validationSchema = Yup.object({
     firstName: Yup.string()
       .trim()
@@ -22,14 +27,19 @@ const InstructorSignup = () => {
     email: Yup.string()
       .email("Invalid email format")
       .required("Email is required"),
+
     document: Yup.mixed()
       .required("PDF file is required")
-      .test("fileType", "Only PDF files are allowed", (value) => {
-        return value && value.type === "application/pdf";
-      })
-      .test("fileSize", "File size must be less than 5MB", (value) => {
-        return value && value.size <= 5 * 1024 * 1024; // 5MB limit
-      }),
+      .test(
+        "fileType",
+        "Only PDF files are allowed",
+        (value) => value && value.type === "application/pdf"
+      )
+      .test(
+        "fileSize",
+        "File size must be less than 1MB",
+        (value) => value && value.size <= 1 * 1024 * 1024
+      ),
 
     password: Yup.string()
       .min(8, "Password must be at least 8 characters")
@@ -44,7 +54,43 @@ const InstructorSignup = () => {
       .required("Confirm Password is required"),
   });
 
-  const fileInputRef = useRef(null);
+  const handleSubmit = async (values, { resetForm, setSubmitting }) => {
+    setSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append("firstName", values.firstName);
+      formData.append("lastName", values.lastName);
+      formData.append("email", values.email);
+      formData.append("password", values.password);
+      formData.append("document", values.document);
+      formData.append("role", "instructor");
+
+      const response = await fetch(
+        "http://localhost:5000/api/auth/instructor-signup",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || "Something went wrong!");
+        return;
+      }
+
+      alert("Instructor registered successfully!");
+      resetForm();
+      navigate("/"); // Redirect to home page
+    } catch (error) {
+      console.error(error);
+      alert("Server error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div>
       <LandingNavbar />
@@ -53,13 +99,14 @@ const InstructorSignup = () => {
           <div className="text-4xl font-bold">Instructor SignUp</div>
           <div className="font-semibold text-gray-400 flex space-x-2 items-center">
             <a href="/">Home</a> <IoIosArrowForward />{" "}
-            <p className="text-purple">Sign Up</p>{" "}
+            <p className="text-purple">Sign Up</p>
           </div>
         </div>
+
         <div className="w-full space-y-6 my-auto">
-          <div className=" mx-auto w-[40%]">
-            <p className=" text-3xl font-bold">Create Your Account</p>
-            <p className=" text-lg font-semibold text-gray-400">
+          <div className="mx-auto w-[40%]">
+            <p className="text-3xl font-bold">Create Your Account</p>
+            <p className="text-lg font-semibold text-gray-400">
               Hey there! Ready to join the LearnLab? We just need a few details
               from you to get started. Let's do this!
             </p>
@@ -75,10 +122,7 @@ const InstructorSignup = () => {
               confirmPassword: "",
             }}
             validationSchema={validationSchema}
-            onSubmit={(values, { resetForm }) => {
-              console.log("Form submitted:", values);
-              resetForm();
-            }}
+            onSubmit={handleSubmit}
           >
             {({ setFieldValue, isSubmitting, values }) => (
               <Form className="mx-auto w-[40%] mb-10">
@@ -134,12 +178,10 @@ const InstructorSignup = () => {
                   />
                 </div>
 
-                {/* File Upload Button */}
                 <div className="mb-10">
                   <label className="font-semibold">
                     Latest Tested Degree <span className="text-red-500">*</span>
                   </label>
-
                   <input
                     type="file"
                     accept="application/pdf"
@@ -149,23 +191,18 @@ const InstructorSignup = () => {
                       setFieldValue("document", event.currentTarget.files[0])
                     }
                   />
-
                   <button
                     type="button"
                     onClick={() => fileInputRef.current.click()}
-                    className="w-full p-2 border border-gray-400 rounded-lg font-semibold text-gray-600 
-                         hover:bg-purple hover:text-white transition"
+                    className="w-full p-2 border border-gray-400 rounded-lg font-semibold text-gray-600 hover:bg-purple hover:text-white transition"
                   >
                     Upload PDF
                   </button>
-
-                  {/* Show Selected File Name */}
                   {values.document && (
                     <p className="mt-2 text-sm text-green-600">
                       Selected: {values.document.name}
                     </p>
                   )}
-
                   <ErrorMessage
                     name="document"
                     component="div"
@@ -210,9 +247,7 @@ const InstructorSignup = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full shadow-lg shadow-blue hover:shadow-none flex items-center justify-center 
-                      rounded-full bg-yellow mt-10 w-fit py-3 font-semibold hover:bg-purple text-black 
-                      hover:text-white transition delay-100 duration-150 ease-in-out hover:-translate-y-1 hover:scale-100"
+                  className="w-full shadow-lg shadow-blue hover:shadow-none flex items-center justify-center rounded-full bg-yellow mt-10 w-fit py-3 font-semibold hover:bg-purple text-black hover:text-white transition delay-100 duration-150 ease-in-out hover:-translate-y-1 hover:scale-100"
                 >
                   {isSubmitting ? "Submitting..." : "Sign Up"}
                   <p className="ml-4">
@@ -223,8 +258,9 @@ const InstructorSignup = () => {
             )}
           </Formik>
         </div>
-        <div className="flex justify-center mb-10 ">
-          <p className="font-semibold text-gray-400 ">
+
+        <div className="flex justify-center mb-10">
+          <p className="font-semibold text-gray-400">
             Already have an account?
           </p>
           <a

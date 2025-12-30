@@ -16,28 +16,37 @@ const validationSchema = Yup.object({
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const users = [
-    { email: "student@gmail.com", password: "Student123", role: "student" },
-    {
-      email: "instructor@gmail.com",
-      password: "Instructor123",
-      role: "instructor",
-    },
-    {
-      email: "expert@gmail.com",
-      password: "Expert123",
-      role: "industryExpert",
-    },
-    { email: "admin@gmail.com", password: "Admin123", role: "admin" },
-  ];
-  const handleLogin = (values) => {
-    const user = users.find(
-      (u) => u.email === values.email && u.password === values.password
-    );
+  // const users = [
+  //   { email: "student@gmail.com", password: "Student123", role: "student" },
+  //   {
+  //     email: "instructor@gmail.com",
+  //     password: "Instructor123",
+  //     role: "instructor",
+  //   },
+  //   {
+  //     email: "expert@gmail.com",
+  //     password: "Expert123",
+  //     role: "industryExpert",
+  //   },
+  //   { email: "admin@gmail.com", password: "Admin123", role: "admin" },
+  // ];
 
-    if (user) {
+  const handleLogin = async (values) => {
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message);
+        return;
+      }
+
       // Navigate based on role
-      switch (user.role) {
+      switch (data.role) {
         case "student":
           navigate("/payment");
           break;
@@ -45,16 +54,17 @@ const LoginPage = () => {
           navigate("/instructor");
           break;
         case "industryExpert":
-          navigate("/industoryExpert");
+          navigate("/industryExpert");
           break;
         case "admin":
-          navigate("/Admin");
+          navigate("/admin");
           break;
         default:
-          break;
+          navigate("/");
       }
-    } else {
-      alert("Invalid email or password");
+    } catch (err) {
+      console.error(err);
+      alert("Server error");
     }
   };
   return (

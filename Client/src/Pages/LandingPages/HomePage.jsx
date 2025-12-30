@@ -203,7 +203,7 @@ const HomePage = () => {
               Start your Learning Journey Today!
             </p>
             <div className=" flex  space-x-36 justify-center">
-              {journey.map((journey, index) => (
+              {journey.map((journey) => (
                 <div className="space-y-3">
                   <div className="flex justify-center">
                     {" "}
@@ -275,7 +275,7 @@ const HomePage = () => {
             <p className="text-5xl">Explore Our World's Best Courses</p>
           </div>
           <div className="flex  space-x-6 justify-center">
-            {courses.map((courses, index) => (
+            {courses.map((courses) => (
               <div className="w-72 border border-2 space-y-3 border-purple rounded-lg px-2 py-4 hover:shadow-lg shadow-blue">
                 <div className="flex justify-center">
                   {" "}
