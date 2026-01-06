@@ -18,10 +18,9 @@ import DashboardPage from "./Pages/Admin/DashboardPage";
 import CoursesPage from "./Pages/Admin/CoursesPage";
 import StudentsPage from "./Pages/Admin/StudentsPage";
 import InstructorsPage from "./Pages/Admin/InstructorsPage";
-import AnalyticsPage from "./Pages/Admin/AnalyticsPage";
-import NotificationsPage from "./Pages/Admin/NotificationsPage";
-import ReportsPage from "./Pages/Admin/ReportsPage";
 import InstructorProfile from "./Pages/Admin/InstructorProfile";
+import IndustryExpertsPage from "./Pages/Admin/IndustryExpertPage";
+import CourseViewDetails from "./Pages/Admin/CourseViewDetails";
 import SettingsPage from "./Pages/Admin/SettingsPage";
 import Reviews from "./Pages/Student/Reviews";
 import QuizAttempts from "./Pages/Student/QuizAttempt";
@@ -89,7 +88,8 @@ function App() {
             <Route path="quizzes" element={<InsQuizAttempts />} />
             <Route path="reviews" element={<InsReviews />} />
             <Route path="courseCreation" element={<CourseCreation />} />
-            <Route path="InsCourseDetails" element={<InsCourseDetails />} />
+            <Route path="InsCourseDetails/:id" element={<InsCourseDetails />} />
+
             <Route
               path="GenralCourseDetails"
               element={<GenralCourseDetails />}
@@ -103,10 +103,7 @@ function App() {
           <Route path="/industoryExpert" element={<IndustoryExpertLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="profile" element={<Profile />} />
-            <Route
-              path="project/:id"
-              element={<ProjectDetails />}
-            />
+            <Route path="project/:id" element={<ProjectDetails />} />
             <Route path="projects" element={<Projects />} />
             <Route path="messages" element={<Messages />} />
             <Route path="courses" element={<Courses />} />
@@ -118,17 +115,13 @@ function App() {
           {/* ---------------Admin dashboard Routing ------------------------- */}
 
           <Route path="/Admin" element={<AdminLayout />}>
-            <Route
-              path="instructor/:id"
-              element={<InstructorProfile />}
-            />
+            <Route path="instructor/:id" element={<InstructorProfile />} />
             <Route index element={<DashboardPage />} />
             <Route path="courses" element={<CoursesPage />} />
             <Route path="students" element={<StudentsPage />} />
             <Route path="instructors" element={<InstructorsPage />} />
-            <Route path="analytics" element={<AnalyticsPage />} />
-            <Route path="notifications" element={<NotificationsPage />} />
-            <Route path="reports" element={<ReportsPage />} />
+            <Route path="industry-experts" element={<IndustryExpertsPage />} />
+            <Route path="courses/:id" element={<CourseViewDetails />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>

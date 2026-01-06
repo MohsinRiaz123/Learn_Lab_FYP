@@ -16,20 +16,6 @@ const validationSchema = Yup.object({
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  // const users = [
-  //   { email: "student@gmail.com", password: "Student123", role: "student" },
-  //   {
-  //     email: "instructor@gmail.com",
-  //     password: "Instructor123",
-  //     role: "instructor",
-  //   },
-  //   {
-  //     email: "expert@gmail.com",
-  //     password: "Expert123",
-  //     role: "industryExpert",
-  //   },
-  //   { email: "admin@gmail.com", password: "Admin123", role: "admin" },
-  // ];
 
   const handleLogin = async (values) => {
     try {
@@ -44,6 +30,9 @@ const LoginPage = () => {
         alert(data.message);
         return;
       }
+
+      // Save user data in localStorage
+      localStorage.setItem("user", JSON.stringify(data));
 
       // Navigate based on role
       switch (data.role) {
@@ -67,6 +56,7 @@ const LoginPage = () => {
       alert("Server error");
     }
   };
+
   return (
     <div>
       <LandingNavbar />
@@ -78,10 +68,11 @@ const LoginPage = () => {
             <p className="text-purple">Login</p>{" "}
           </div>
         </div>
+
         <div className="w-full space-y-6 my-auto">
-          <div className=" mx-auto w-[40%]">
-            <p className=" text-3xl font-bold">Welcome back!</p>
-            <p className=" text-lg font-semibold text-gray-400">
+          <div className="mx-auto w-[40%]">
+            <p className="text-3xl font-bold">Welcome back!</p>
+            <p className="text-lg font-semibold text-gray-400">
               Hey there! Ready to log in? Just enter your email and password
               below and you'll be back in action in no time. Let's go!
             </p>
@@ -96,7 +87,7 @@ const LoginPage = () => {
             }}
           >
             {({ isSubmitting }) => (
-              <Form className=" mx-auto w-[40%] mb-14 ">
+              <Form className="mx-auto w-[40%] mb-14">
                 <div className="mb-14">
                   <label className="font-semibold ">
                     Email <span className="text-red-500">*</span>
@@ -104,8 +95,8 @@ const LoginPage = () => {
                   <Field
                     type="email"
                     name="email"
-                    placeholder="E-mail "
-                    className="w-full p-2 border border-gray-300 rounded-lg  placeholder-gray-400 "
+                    placeholder="E-mail"
+                    className="w-full p-2 border border-gray-300 rounded-lg placeholder-gray-400"
                   />
                   <ErrorMessage
                     name="email"
@@ -122,7 +113,7 @@ const LoginPage = () => {
                     type="password"
                     name="password"
                     placeholder="Password"
-                    className="w-full p-2 border border-gray-300 rounded-lg  placeholder-gray-400 "
+                    className="w-full p-2 border border-gray-300 rounded-lg placeholder-gray-400"
                   />
                   <ErrorMessage
                     name="password"
@@ -130,15 +121,17 @@ const LoginPage = () => {
                     className="text-red-500 text-sm"
                   />
                 </div>
+
                 <div className="flex item-center justify-end">
                   <a href="/forgotPassword" className="text-purple underline">
                     Forgot Password?
                   </a>
                 </div>
+
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className=" w-full shadow-lg shadow-blue hover:shadow-none flex items-center justify-center rounded-full bg-yellow   mt-10 w-fit py-3 font-semibold  hover:bg-purple text-black hover:text-white  transition delay-100 duration-150 ease-in-out hover:-translate-y-1 hover:scale-100 "
+                  className="w-full shadow-lg shadow-blue hover:shadow-none flex items-center justify-center rounded-full bg-yellow mt-10 w-fit py-3 font-semibold hover:bg-purple text-black hover:text-white transition delay-100 duration-150 ease-in-out hover:-translate-y-1 hover:scale-100"
                 >
                   {isSubmitting ? "Submitting..." : "Sign In"}
                   <p className="ml-4">
@@ -149,8 +142,9 @@ const LoginPage = () => {
             )}
           </Formik>
         </div>
-        <div className="flex justify-center mb-10 ">
-          <p className="font-semibold text-gray-400 ">Don't have an account?</p>
+
+        <div className="flex justify-center mb-10">
+          <p className="font-semibold text-gray-400">Don't have an account?</p>
           <a
             href="/studentSignup"
             className="pl-1 underline text-purple hover:text-yellow"

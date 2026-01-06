@@ -8,7 +8,6 @@ import instructor from "../../assets/Images/zoya.png"
 import { useNavigate } from "react-router-dom";
 
 const dashboardStats = [
-  { title: "ASSIGN COURSES", count: 30, icon: <FaBook /> },
   { title: "TOTAL STUDENTS", count: 120, icon: <MdOutlinePeopleAlt /> },
   { title: "TOTAL PUBLISH COURSES", count: 17, icon: <FaFileSignature /> },
 ];
@@ -61,7 +60,7 @@ const Dashboard = () => {
     <div className="p-6">
       {/* Dashboard Cards */}
       <h2 className="text-xl font-bold mb-4">Dashboard</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
         {dashboardStats.map((stat, index) => (
           <div key={index} className="bg-white rounded-lg p-5 shadow flex items-center gap-4 ">
             <div className="bg-purple text-white p-5 rounded-full text-3xl">

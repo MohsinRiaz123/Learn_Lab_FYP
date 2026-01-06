@@ -8,9 +8,7 @@ export function Sidebar() {
     { path: "/Admin/courses", label: "Courses", icon: "📚" },
     { path: "/Admin/students", label: "Students", icon: "👥" },
     { path: "/Admin/instructors", label: "Instructors", icon: "👨‍🏫" },
-    { path: "/Admin/analytics", label: "Analytics", icon: "📈" },
-    { path: "/Admin/notifications", label: "Notifications", icon: "🔔" },
-    { path: "/Admin/reports", label: "Reports", icon: "📄" },
+    { path: "/Admin/industry-experts", label: "Industry Experts", icon: "💼" },
     { path: "/Admin/settings", label: "Settings", icon: "⚙️" },
     { path: "/", label: "Logout", icon: <FiLogOut/> },
   ]

@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "./Card"
 import { Button } from "./Button"
 import { Badge } from "./Badge"
@@ -7,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 
 export function CourseApprovalList() {
   const [searchTerm, setSearchTerm] = useState("")
+  const navigate = useNavigate()
   const [courses, setCourses] = useState([
     {
       id: 1,
@@ -87,8 +89,8 @@ export function CourseApprovalList() {
               <TableHead>Course Title</TableHead>
               <TableHead>Instructor</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Students</TableHead>
               <TableHead>Date</TableHead>
+               <TableHead>Details</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -98,8 +100,15 @@ export function CourseApprovalList() {
                 <TableCell className="font-medium">{course.title}</TableCell>
                 <TableCell>{course.instructor}</TableCell>
                 <TableCell>{getStatusBadge(course.status)}</TableCell>
-                <TableCell>{course.students}</TableCell>
                 <TableCell>{course.date}</TableCell>
+                <TableCell><Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => navigate(`/admin/courses/${course.id}`)}
+                  >
+                    View Details
+                  </Button></TableCell>
+                
                 <TableCell>
                   {course.status === "pending" && (
                     <div className="flex space-x-2">

@@ -2,10 +2,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "./Card"
 
 export function DashboardStats() {
   const stats = [
-    { title: "Total Students", value: "2,847", change: "+12%", icon: "👥" },
-    { title: "Active Courses", value: "156", change: "+8%", icon: "📚" },
-    { title: "Instructors", value: "89", change: "+3%", icon: "👨‍🏫" },
-    { title: "Revenue", value: "$45,231", change: "+15%", icon: "💰" },
+    { title: "Total Students", value: "2,847" },
+    { title: "Active Courses", value: "156"},
+    { title: "Instructors", value: "89"},
+    { title: "Revenue", value: "45,231"},
   ]
 
   return (
@@ -18,7 +18,7 @@ export function DashboardStats() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stat.value}</div>
-            <p className="text-xs text-green-600 mt-1">{stat.change} from last month</p>
+           
           </CardContent>
         </Card>
       ))}

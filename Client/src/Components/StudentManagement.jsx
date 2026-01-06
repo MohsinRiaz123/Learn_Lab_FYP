@@ -4,23 +4,18 @@ import { Button } from "./Button"
 import { Badge } from "./Badge"
 import { Input } from "./Input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./Table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./Dialog"
+
 
 export function StudentManagement() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedStudent, setSelectedStudent] = useState(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [students, setStudents] = useState([
     { id: 1, name: "Alice Johnson", email: "alice@example.com", status: "active", courses: 3, joinDate: "2024-01-15" },
-    { id: 2, name: "Bob Smith", email: "bob@example.com", status: "inactive", courses: 1, joinDate: "2024-01-10" },
+    { id: 2, name: "Bob Smith", email: "bob@example.com", status: "active", courses: 1, joinDate: "2024-01-10" },
     { id: 3, name: "Carol Wilson", email: "carol@example.com", status: "active", courses: 5, joinDate: "2024-01-12" },
     { id: 4, name: "David Brown", email: "david@example.com", status: "suspended", courses: 2, joinDate: "2024-01-18" },
   ])
 
-  const handleViewStudent = (student) => {
-    setSelectedStudent(student)
-    setIsDialogOpen(true)
-  }
+  
 
   const handleStatusChange = (id, newStatus) => {
     setStudents(students.map((student) => (student.id === id ? { ...student, status: newStatus } : student)))
@@ -78,9 +73,6 @@ export function StudentManagement() {
                   <TableCell>{student.joinDate}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
-                      <Button size="sm" variant="outline" onClick={() => handleViewStudent(student)}>
-                        View
-                      </Button>
                       {student.status === "active" && (
                         <Button
                           size="sm"
@@ -103,36 +95,6 @@ export function StudentManagement() {
           </Table>
         </CardContent>
       </Card>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Student Details</DialogTitle>
-          </DialogHeader>
-          {selectedStudent && (
-            <div className="space-y-4">
-              <div>
-                <strong>Name:</strong> {selectedStudent.name}
-              </div>
-              <div>
-                <strong>Email:</strong> {selectedStudent.email}
-              </div>
-              <div>
-                <strong>Status:</strong> {getStatusBadge(selectedStudent.status)}
-              </div>
-              <div>
-                <strong>Enrolled Courses:</strong> {selectedStudent.courses}
-              </div>
-              <div>
-                <strong>Join Date:</strong> {selectedStudent.joinDate}
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button onClick={() => setIsDialogOpen(false)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   )
 }

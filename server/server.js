@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
+import courseRoutes from "./routes/courseRoutes.js";
 import path from "path";
 dotenv.config();
 connectDB();
@@ -10,12 +11,15 @@ connectDB();
 const app = express();
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // for parsing application/json
+app.use(express.urlencoded({ extended: true })); // for parsing form-data
 
 // Serve uploaded files statically
 app.use("/uploads", express.static(path.join(path.resolve(), "uploads")));
 // Routes
 app.use("/api/auth", authRoutes);
+
+app.use("/api/courses", courseRoutes);
 
 // Test route
 app.get("/", (req, res) => {

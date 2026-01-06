@@ -1,13 +1,16 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css';
+import "react-toastify/dist/ReactToastify.css";
 
 const CreateCourseScreen = () => {
-  const navigate = useNavigate();
+
+  const user = JSON.parse(localStorage.getItem("user"));
+
+
   const [formData, setFormData] = useState({
     title: "",
-    instructor: "",
+    instructor: user ? `${user.firstName} ${user.lastName}` : "",
+    instructorId: user ? user.id : "",
     image: null,
     description: "",
     skills: [""],
@@ -35,35 +38,41 @@ const CreateCourseScreen = () => {
     setFormData((prev) => ({ ...prev, skills: [...prev.skills, ""] }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
+    console.log("Submitting form with data:", formData);
     e.preventDefault();
-
     const data = new FormData();
     data.append("title", formData.title);
     data.append("instructor", formData.instructor);
+    data.append("instructorId", formData.instructorId);
     data.append("description", formData.description);
     data.append("date", formData.date);
-    data.append("image", formData.image);
-    data.append("video", formData.video);
-    formData.skills.forEach((skill, idx) =>
-      data.append(`skills[${idx}]`, skill)
-    );
+    data.append("skills", JSON.stringify(formData.skills)); // Send as string
+    if (formData.image) data.append("image", formData.image);
+    if (formData.video) data.append("video", formData.video);
 
-    console.log("Course Created:", {
-      ...formData,
-      image: formData.image?.name,
-      video: formData.video?.name,
-    });
-
-    toast.success("Course created successfully!", {
-      position: "top-center",
-      autoClose: 3000,
-    });
-
-    // Optional: Navigate after delay (e.g., after toast)
-    setTimeout(() => {
-      navigate("/instructor/createCourse");
-    }, 3000);
+    try {
+      const res = await fetch("http://localhost:5000/api/courses", {
+        method: "POST",
+        body: data,
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message);
+      toast.success("Course created successfully!");
+      // Reset form
+      setFormData({
+        title: "",
+        instructor: user ? `${user.firstName} ${user.lastName}` : "",
+        instructorId: user ? user.id : "",
+        image: null,
+        description: "",
+        skills: [""],
+        date: "",
+        video: null,
+      });
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   return (
@@ -71,25 +80,12 @@ const CreateCourseScreen = () => {
       <ToastContainer />
       <h2 className="text-2xl font-bold text-purple mb-6">Create New Course</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-
         <div>
           <label className="block text-sm font-medium">Course Title</label>
           <input
             type="text"
             name="title"
             value={formData.title}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Instructor Name</label>
-          <input
-            type="text"
-            name="instructor"
-            value={formData.instructor}
             onChange={handleChange}
             className="w-full p-2 border rounded-md"
             required
@@ -144,7 +140,9 @@ const CreateCourseScreen = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Course Description</label>
+          <label className="block text-sm font-medium">
+            Course Description
+          </label>
           <textarea
             name="description"
             value={formData.description}

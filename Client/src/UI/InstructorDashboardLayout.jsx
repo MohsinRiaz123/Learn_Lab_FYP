@@ -42,7 +42,6 @@ const InstructorDashboardLayout = () => {
       {/* ----------------Header----------------------- */}
       <div className="bg-gradient-to-r from-blue to-purple text-white">
         <div className=" text-center pt-10">
-          <h1 className="text-lg font-semibold">Web Developer</h1>
           <h2 className="text-4xl font-bold mt-1">Learn With {info.name}</h2>
         </div>
         <div className="flex justify-around">
@@ -56,11 +55,7 @@ const InstructorDashboardLayout = () => {
             </div>
             <div>
               <h2 className="text-xl font-semibold ">{info.name}</h2>
-              <p className="mt-1 text-sm">
-                {info.rating}
-                <span className="text-yellow-500 ">⭐</span> Rating | ({" "}
-                {info.reviews} Reviews )
-              </p>
+             
             </div>
           </div>
           <div>

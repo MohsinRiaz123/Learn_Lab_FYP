@@ -1,44 +1,49 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  FaUserGraduate,
-  FaStar,
-} from "react-icons/fa";
+import { FaUserGraduate } from "react-icons/fa";
 
+// Default images for placeholder if course has no image
 import itc from "../../assets/Images/ITC.png";
-import oop from "../../assets/Images/oop.png";
-
-
-
-const publishCourses = [
-  {
-    id: 1,
-    title: "Intro to Computer Science",
-    category: "Computer Science",
-    image: itc,
-    tags: ["Beginner", "Theory"],
-    author: "Alice",
-    rating: 4.6,
-    complete: 20,
-    stats: { lessons: 15, time: "8h 30m", comments: 18 },
-  },
-  {
-    id: 2,
-    title: "Object-Oriented Programming",
-    category: "Programming",
-    image: oop,
-    tags: ["Intermediate", "Java"],
-    author: "Bob",
-    rating: 4.8,
-    complete: 60,
-    stats: { lessons: 25, time: "16h 15m", comments: 32 },
-  },
-];
-
-
 
 const CreateCourse = () => {
   const navigate = useNavigate();
+  const [publishCourses, setPublishCourses] = useState([]);
+
+  const user = JSON.parse(localStorage.getItem("user")); // Logged-in user
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchCourses = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/courses/instructor/${user.id}`
+        );
+
+        const data = await res.json();
+        setPublishCourses(
+          data.map((course) => ({
+            id: course._id,
+            title: course.title,
+            category: course.category || "General",
+            image: course.image
+              ? `http://localhost:5000/api/courses/${course._id}/image`
+              : itc,
+            video: course.video
+              ? `http://localhost:5000/api/courses/${course._id}/video`
+              : null,
+            tags: course.skills || [],
+            author: user.firstName + " " + user.lastName,
+            status: course.status || "pending",
+          }))
+        );
+      } catch (err) {
+        console.error("Failed to fetch courses:", err);
+      }
+    };
+
+    fetchCourses();
+  }, [user]);
   return (
     <div className="p-6 bg-white rounded-lg shadow w-[70%] mx-auto">
       <button
@@ -51,11 +56,13 @@ const CreateCourse = () => {
 
       {/* Course Cards */}
       <div className="grid md:grid-cols-3 gap-6">
+     
         {publishCourses.map((course) => (
           <div
             key={course.id}
             className="border border-gray-300 rounded-xl overflow-hidden shadow-sm bg-white"
-             onClick={() => navigate("/instructor/InsCourseDetails")}
+            onClick={() => navigate(`/instructor/InsCourseDetails/${course.id}`)}
+
           >
             <img
               src={course.image}
@@ -66,15 +73,14 @@ const CreateCourse = () => {
             <div className="p-4">
               <h3 className="font-semibold text-md mb-2">{course.title}</h3>
 
-              {/* Progress */}
-             
-                  {/* Author & Reviews */}
-                  <div className="flex items-center text-sm text-gray-600 gap-1">
-                    <FaUserGraduate className="text-gray-500" />
-                    <span>{course.author}</span>
-                    <FaStar className="ml-4 text-yellow-500" />
-                    <span>({course.rating} Reviews)</span>
-                  </div>
+              {/* Author & Status */}
+              <div className="flex items-center text-sm text-gray-600 gap-1">
+                <FaUserGraduate className="text-gray-500" />
+                <span>{course.author}</span>
+                <span className="ml-auto font-medium text-purple">
+                  {course.status}
+                </span>
+              </div>
             </div>
           </div>
         ))}

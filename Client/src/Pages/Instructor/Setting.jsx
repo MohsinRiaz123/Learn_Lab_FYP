@@ -1,30 +1,33 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import axios from "axios";
 
 const Setting = () => {
+  const user = JSON.parse(localStorage.getItem("user")); // Get logged-in user
+  const userId = user?._id;
+
   const [profile, setProfile] = useState({
-    registrationDate: "February 28, 2026 8:01 am",
-    firstName: "Zoya",
-    lastName: "Bilal",
-    username: "instructor",
-    email: "example@gmail.com",
-    phone: "+1-202-555-0174",
-    occupation: "Web Developer",
-    bio: `I'm the Front-End Developer for #ThemeGenix in New York, OR. I have a serious passion for UI effects, animations, and creating intuitive, dynamic user experiences.`,
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    occupation: "",
+    bio: "",
+    profilePicture: "", // filename from backend
   });
 
   const [passwords, setPasswords] = useState({
-    current: "mohgf",
+    current: "",
     new: "",
     confirm: "",
   });
 
   const [socialLinks, setSocialLinks] = useState({
-    twitter: "hgyhg@gmail.com",
-    linkedin: "gfyswghjegmail.com",
-    github: "mlcnkfgmail.com",
+    twitter: "",
+    linkedin: "",
+    github: "",
   });
 
   const [activeTab, setActiveTab] = useState("Personal Info");
@@ -34,27 +37,67 @@ const Setting = () => {
     confirm: false,
   });
 
+  const [profileImage, setProfileImage] = useState(null); // preview
+  const [profileFile, setProfileFile] = useState(null); // file to upload
+
+  // Toggle password visibility
   const togglePasswordVisibility = (field) => {
-    setPasswordVisibility((prev) => ({
-      ...prev,
-      [field]: !prev[field],
-    }));
+    setPasswordVisibility((prev) => ({ ...prev, [field]: !prev[field] }));
   };
 
-  const [profileImage, setProfileImage] = useState(null);
-
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setProfileImage(imageUrl);
-    }
-  };
+  // Input change handler
   const handleChange = (setter, field, value) => {
     setter((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
+  // Handle image upload
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfileImage(URL.createObjectURL(file)); // preview
+      setProfileFile(file); // upload
+    }
+  };
+
+  // Fetch user data on load
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/auth/user/${userId}`);
+        const data = res.data;
+
+        setProfile({
+          firstName: data.firstName || "",
+          lastName: data.lastName || "",
+          email: data.email || "",
+          phone: data.phone || "",
+          occupation: data.occupation || "",
+          bio: data.bio || "",
+          profilePicture: data.profilePicture || "",
+        });
+
+        setSocialLinks({
+          twitter: data.twitter || "",
+          linkedin: data.linkedin || "",
+          github: data.github || "",
+        });
+
+        if (data.profilePicture) {
+          setProfileImage(`http://localhost:5000/uploads/profiles/${data.profilePicture}`);
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to fetch user data");
+      }
+    };
+
+    fetchUser();
+  }, [userId]);
+
+  // Handle save
+  const handleSave = async () => {
     if (activeTab === "Password") {
       if (passwords.new !== passwords.confirm) {
         toast.error("New password and Confirm password must match!");
@@ -66,29 +109,51 @@ const Setting = () => {
       }
     }
 
-    toast.success("Profile saved successfully!");
-    console.log({ profile, passwords, socialLinks });
+    try {
+      const formData = new FormData();
+
+      // Personal info
+      Object.entries(profile).forEach(([key, value]) => {
+        if (key !== "profilePicture") formData.append(key, value);
+      });
+
+      // Social links
+      Object.entries(socialLinks).forEach(([key, value]) => formData.append(key, value));
+
+      // Password
+      if (activeTab === "Password") {
+        formData.append("currentPassword", passwords.current);
+        formData.append("newPassword", passwords.new);
+      }
+
+      // Profile picture
+      if (profileFile) formData.append("profilePicture", profileFile);
+
+      const res = await axios.put(`http://localhost:5000/api/auth/user/${userId}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      toast.success("Profile updated successfully!");
+      console.log(res.data);
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to save profile");
+    }
   };
 
+  // Render tabs
   const renderPersonalInfo = () => (
     <div className="space-y-6">
-      {/* Profile Image Upload */}
       <div className="flex items-center space-x-4">
         <div className="w-20 h-20 rounded-full overflow-hidden border">
           <img
-            src={
-              profileImage ||
-              "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y"
-            }
+            src={profileImage || "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y"}
             alt="Profile"
             className="object-cover w-full h-full"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Profile Picture
-          </label>
-
+          <label className="block text-sm font-medium text-gray-700 mb-1">Profile Picture</label>
           <button
             type="button"
             onClick={() => document.getElementById("imageUpload").click()}
@@ -96,41 +161,25 @@ const Setting = () => {
           >
             Upload Image
           </button>
-
-          <input
-            id="imageUpload"
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="hidden"
-          />
+          <input id="imageUpload" type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
         </div>
       </div>
+
       {[
-        { label: "First Name", field: "firstName", type: "text" },
-        { label: "Last Name", field: "lastName", type: "text" },
-        { label: "Phone Number", field: "phone", type: "text" },
-        { label: "Skill/Occupation", field: "occupation", type: "text" },
-      ].map(({ label, field, type }) => (
+        { label: "First Name", field: "firstName" },
+        { label: "Last Name", field: "lastName" },
+        { label: "Phone Number", field: "phone" },
+        { label: "Skill/Occupation", field: "occupation" },
+      ].map(({ label, field }) => (
         <div key={field} className="flex flex-col">
           <label className="font-medium mb-1">{label}</label>
-          <input
-            type={type}
-            value={profile[field]}
-            onChange={(e) => handleChange(setProfile, field, e.target.value)}
-            className="border rounded px-3 py-2"
-          />
+          <input type="text" value={profile[field]} onChange={(e) => handleChange(setProfile, field, e.target.value)} className="border rounded px-3 py-2" />
         </div>
       ))}
 
       <div className="flex flex-col">
         <label className="font-medium mb-1">Biography</label>
-        <textarea
-          value={profile.bio}
-          onChange={(e) => handleChange(setProfile, "bio", e.target.value)}
-          rows={4}
-          className="border rounded px-3 py-2"
-        />
+        <textarea value={profile.bio} onChange={(e) => handleChange(setProfile, "bio", e.target.value)} rows={4} className="border rounded px-3 py-2" />
       </div>
     </div>
   );
@@ -149,18 +198,10 @@ const Setting = () => {
             value={passwords[field]}
             onChange={(e) => handleChange(setPasswords, field, e.target.value)}
             className={`border rounded px-3 py-2 pr-10 ${
-              field === "confirm" &&
-              passwords.confirm &&
-              passwords.new !== passwords.confirm
-                ? "border-red-500"
-                : ""
+              field === "confirm" && passwords.confirm && passwords.new !== passwords.confirm ? "border-red-500" : ""
             }`}
           />
-          <button
-            type="button"
-            onClick={() => togglePasswordVisibility(field)}
-            className="absolute right-3 top-[38px] text-gray-500"
-          >
+          <button type="button" onClick={() => togglePasswordVisibility(field)} className="absolute right-3 top-[38px] text-gray-500">
             {passwordVisibility[field] ? <FaEyeSlash /> : <FaEye />}
           </button>
         </div>
@@ -177,15 +218,7 @@ const Setting = () => {
       ].map(({ label, field }) => (
         <div key={field} className="flex flex-col">
           <label className="font-medium mb-1">{label}</label>
-          <input
-            type="text"
-            value={socialLinks[field]}
-            onChange={(e) =>
-              handleChange(setSocialLinks, field, e.target.value)
-            }
-            className="border rounded px-3 py-2"
-            placeholder={`Enter your ${label}`}
-          />
+          <input type="text" value={socialLinks[field]} onChange={(e) => handleChange(setSocialLinks, field, e.target.value)} className="border rounded px-3 py-2" placeholder={`Enter your ${label}`} />
         </div>
       ))}
     </div>
@@ -196,36 +229,22 @@ const Setting = () => {
       <ToastContainer position="top-center" />
       <h2 className="text-xl font-bold text-gray-800 mb-6">My Profile</h2>
 
-      {/* Tabs */}
       <div className="flex space-x-6 mb-6">
         {["Personal Info", "Password", "Social Links"].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`pb-2 font-medium ${
-              activeTab === tab
-                ? "border-b-4 border-purple text-purple"
-                : "text-gray-600"
-            }`}
-          >
+          <button key={tab} onClick={() => setActiveTab(tab)} className={`pb-2 font-medium ${activeTab === tab ? "border-b-4 border-purple text-purple" : "text-gray-600"}`}>
             {tab}
           </button>
         ))}
       </div>
 
-      {/* Tab Content */}
       <div className="text-gray-700">
         {activeTab === "Personal Info" && renderPersonalInfo()}
         {activeTab === "Password" && renderPassword()}
         {activeTab === "Social Links" && renderSocialLinks()}
       </div>
 
-      {/* Save Button */}
       <div className="pt-6 text-right">
-        <button
-          onClick={handleSave}
-          className="bg-purple hover:bg-blue-800 text-white px-6 py-2 rounded-md"
-        >
+        <button onClick={handleSave} className="bg-purple hover:bg-blue-800 text-white px-6 py-2 rounded-md">
           Save
         </button>
       </div>

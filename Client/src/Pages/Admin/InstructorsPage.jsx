@@ -1,13 +1,19 @@
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/Card"
-import { Button } from "../../components/Button"
-import { Badge } from "../../components/Badge"
-import { Input } from "../../components/Input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/Table"
-import React from 'react'
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/Card";
+import { Button } from "../../components/Button";
+import { Badge } from "../../components/Badge";
+import { Input } from "../../components/Input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../components/Table";
 
 const InstructorsPage = () => {
-   const [searchTerm, setSearchTerm] = useState("")
+  const [searchTerm, setSearchTerm] = useState("");
   const [instructors, setInstructors] = useState([
     {
       id: 1,
@@ -15,7 +21,6 @@ const InstructorsPage = () => {
       email: "john@example.com",
       status: "approved",
       courses: 3,
-      rating: 4.8,
       joinDate: "2024-01-15",
     },
     {
@@ -24,7 +29,6 @@ const InstructorsPage = () => {
       email: "sarah@example.com",
       status: "pending",
       courses: 0,
-      rating: 0,
       joinDate: "2024-01-20",
     },
     {
@@ -33,7 +37,6 @@ const InstructorsPage = () => {
       email: "mike@example.com",
       status: "approved",
       courses: 5,
-      rating: 4.6,
       joinDate: "2024-01-12",
     },
     {
@@ -42,44 +45,82 @@ const InstructorsPage = () => {
       email: "emily@example.com",
       status: "rejected",
       courses: 0,
-      rating: 0,
       joinDate: "2024-01-18",
     },
-  ])
+  ]);
 
+  // Approve instructor
   const handleApprove = (id) => {
     setInstructors(
-      instructors.map((instructor) => (instructor.id === id ? { ...instructor, status: "approved" } : instructor)),
-    )
-    console.log(`Instructor ${id} approved`)
-  }
+      instructors.map((instructor) =>
+        instructor.id === id
+          ? { ...instructor, status: "approved" }
+          : instructor
+      )
+    );
+  };
 
+  // Reject instructor
   const handleReject = (id) => {
     setInstructors(
-      instructors.map((instructor) => (instructor.id === id ? { ...instructor, status: "rejected" } : instructor)),
-    )
-    console.log(`Instructor ${id} rejected`)
-  }
+      instructors.map((instructor) =>
+        instructor.id === id
+          ? { ...instructor, status: "rejected" }
+          : instructor
+      )
+    );
+  };
 
+  // 🔽 Download Resume
+  const handleDownloadResume = (instructor) => {
+    const resumeContent = `
+Instructor Resume
+
+Name: ${instructor.name}
+Email: ${instructor.email}
+Courses: ${instructor.courses}
+Joined: ${instructor.joinDate}
+    `;
+
+    const blob = new Blob([resumeContent], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${instructor.name.replace(" ", "_")}_Resume.pdf`;
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Search filter
   const filteredInstructors = instructors.filter(
     (instructor) =>
       instructor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      instructor.email.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+      instructor.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
+  // Status badge
   const getStatusBadge = (status) => {
     const variants = {
       pending: "warning",
       approved: "success",
       rejected: "error",
-    }
-    return <Badge variant={variants[status]}>{status}</Badge>
-  }
+    };
+    return <Badge variant={variants[status]}>{status}</Badge>;
+  };
+
   return (
-     <div className="space-y-6">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Instructor Management</h1>
-        <p className="text-gray-600">Manage instructor applications and accounts</p>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Instructor Management
+        </h1>
+        <p className="text-gray-600">
+          Manage instructor applications and accounts
+        </p>
       </div>
 
       <Card>
@@ -94,6 +135,7 @@ const InstructorsPage = () => {
             />
           </div>
         </CardHeader>
+
         <CardContent>
           <Table>
             <TableHeader>
@@ -102,31 +144,52 @@ const InstructorsPage = () => {
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Courses</TableHead>
-                <TableHead>Rating</TableHead>
+                <TableHead>Download Resume</TableHead>
                 <TableHead>Join Date</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {filteredInstructors.map((instructor) => (
                 <TableRow key={instructor.id}>
-                  <TableCell className="font-medium">{instructor.name}</TableCell>
+                  <TableCell className="font-medium">
+                    {instructor.name}
+                  </TableCell>
                   <TableCell>{instructor.email}</TableCell>
                   <TableCell>{getStatusBadge(instructor.status)}</TableCell>
                   <TableCell>{instructor.courses}</TableCell>
-                  <TableCell>{instructor.rating > 0 ? `⭐ ${instructor.rating}` : "N/A"}</TableCell>
+
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      onClick={() => handleDownloadResume(instructor)}
+                    >
+                      Download Resume
+                    </Button>
+                  </TableCell>
+
                   <TableCell>{instructor.joinDate}</TableCell>
+
                   <TableCell>
                     {instructor.status === "pending" && (
-                      <div className="flex space-x-2">
-                        <Button size="sm" onClick={() => handleApprove(instructor.id)}>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleApprove(instructor.id)}
+                        >
                           Approve
                         </Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleReject(instructor.id)}>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleReject(instructor.id)}
+                        >
                           Reject
                         </Button>
                       </div>
                     )}
+
                     {instructor.status === "approved" && (
                       <Button size="sm" variant="outline">
                         View Profile
@@ -140,8 +203,7 @@ const InstructorsPage = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export default InstructorsPage
-
+export default InstructorsPage;
