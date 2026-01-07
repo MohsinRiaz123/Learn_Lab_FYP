@@ -4,6 +4,8 @@ import { useParams } from "react-router-dom";
 const InsCourseDetails = () => {
   const { id } = useParams();
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const [course, setCourse] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -12,12 +14,10 @@ const InsCourseDetails = () => {
     if (!id) return;
     const fetchCourse = async () => {
       try {
-        const res = await fetch(
-          `http://localhost:5000/api/courses/${id}`
-        );
+        const res = await fetch(`http://localhost:5000/api/courses/${id}`);
         const data = await res.json();
         setCourse(data);
-         setCourse({
+        setCourse({
           ...data,
           image: data.image
             ? `http://localhost:5000/api/courses/${id}/image`
@@ -52,9 +52,17 @@ const InsCourseDetails = () => {
     }));
   };
 
- const toggleEdit = async () => {
-  if (isEditing) {
+  const toggleEdit = async () => {
+    // ENTER EDIT MODE
+    if (!isEditing) {
+      setIsEditing(true);
+      return;
+    }
+
+    // SAVE CHANGES
     try {
+      setIsSaving(true);
+
       const payload = {
         title: course.title,
         instructor: course.instructor,
@@ -63,27 +71,25 @@ const InsCourseDetails = () => {
         skills: course.skills,
       };
 
-      const res = await fetch(
-        `http://localhost:5000/api/courses/${id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+      const res = await fetch(`http://localhost:5000/api/courses/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       if (!res.ok) {
         throw new Error("Failed to update course");
       }
+
+      // ✅ SUCCESS → exit edit mode
+      setIsEditing(false);
     } catch (err) {
       console.error("Update error:", err);
       alert("Failed to save changes");
-      return;
+    } finally {
+      setIsSaving(false);
     }
-  }
-
-  setIsEditing(!isEditing);
-};
+  };
 
   if (!course) return <p className="text-center mt-10">Loading...</p>;
 
@@ -98,9 +104,15 @@ const InsCourseDetails = () => {
 
         <button
           onClick={toggleEdit}
-          className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow transition"
+          disabled={isSaving}
+          className={`px-5 py-2 text-white rounded-lg shadow transition
+    ${
+      isSaving
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-indigo-600 hover:bg-indigo-700"
+    }`}
         >
-          {isEditing ? "Save Changes" : "Edit"}
+          {isSaving ? "Saving..." : isEditing ? "Save Changes" : "Edit"}
         </button>
       </div>
 
@@ -178,15 +190,11 @@ const InsCourseDetails = () => {
               {isEditing ? (
                 <input
                   value={skill}
-                  onChange={(e) =>
-                    handleSkillChange(index, e.target.value)
-                  }
+                  onChange={(e) => handleSkillChange(index, e.target.value)}
                   className="w-full border rounded-lg px-3 py-2"
                 />
               ) : (
-                <li className="ml-5 list-disc text-gray-700">
-                  {skill}
-                </li>
+                <li className="ml-5 list-disc text-gray-700">{skill}</li>
               )}
             </div>
           ))}

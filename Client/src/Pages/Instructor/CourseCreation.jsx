@@ -3,9 +3,8 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const CreateCourseScreen = () => {
-
   const user = JSON.parse(localStorage.getItem("user"));
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -39,15 +38,19 @@ const CreateCourseScreen = () => {
   };
 
   const handleSubmit = async (e) => {
-    console.log("Submitting form with data:", formData);
     e.preventDefault();
+
+    if (isSubmitting) return; // 🚫 prevent double click
+
+    setIsSubmitting(true); // 🔒 lock button
+
     const data = new FormData();
     data.append("title", formData.title);
     data.append("instructor", formData.instructor);
     data.append("instructorId", formData.instructorId);
     data.append("description", formData.description);
     data.append("date", formData.date);
-    data.append("skills", JSON.stringify(formData.skills)); // Send as string
+    data.append("skills", JSON.stringify(formData.skills));
     if (formData.image) data.append("image", formData.image);
     if (formData.video) data.append("video", formData.video);
 
@@ -56,10 +59,12 @@ const CreateCourseScreen = () => {
         method: "POST",
         body: data,
       });
+
       const result = await res.json();
       if (!res.ok) throw new Error(result.message);
+
       toast.success("Course created successfully!");
-      // Reset form
+
       setFormData({
         title: "",
         instructor: user ? `${user.firstName} ${user.lastName}` : "",
@@ -72,6 +77,8 @@ const CreateCourseScreen = () => {
       });
     } catch (err) {
       toast.error(err.message);
+    } finally {
+      setIsSubmitting(false); // 🔓 unlock button
     }
   };
 
@@ -178,9 +185,16 @@ const CreateCourseScreen = () => {
 
         <button
           type="submit"
-          className="w-full bg-purple hover:bg-blue text-white font-semibold py-2 px-4 rounded-md"
+          disabled={isSubmitting}
+          className={`w-full text-white font-semibold py-2 px-4 rounded-md transition
+    ${
+      isSubmitting
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-purple hover:bg-blue"
+    }
+  `}
         >
-          Create Course
+          {isSubmitting ? "Creating..." : "Create Course"}
         </button>
       </form>
     </div>

@@ -4,6 +4,7 @@ import cors from "cors";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 import path from "path";
 dotenv.config();
 connectDB();
@@ -20,6 +21,7 @@ app.use("/uploads", express.static(path.join(path.resolve(), "uploads")));
 app.use("/api/auth", authRoutes);
 
 app.use("/api/courses", courseRoutes);
+app.use("/api/users",  userRoutes);
 
 // Test route
 app.get("/", (req, res) => {

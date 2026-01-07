@@ -89,7 +89,7 @@ router.put("/:id", upload.any(), async (req, res) => {
   course.title = req.body.title;
   course.description = req.body.description;
   course.date = req.body.date;
-  course.skills = JSON.parse(req.body.skills);
+  course.skills = req.body.skills;
 
   req.files?.forEach((file) => {
     if (file.mimetype.startsWith("image")) {

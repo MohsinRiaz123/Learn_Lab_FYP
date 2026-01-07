@@ -65,7 +65,7 @@ const LoginPage = () => {
           <div className="text-4xl font-bold">Login</div>
           <div className="font-semibold text-gray-400 flex space-x-2 items-center">
             <a href="/">Home</a> <IoIosArrowForward />{" "}
-            <p className="text-purple">Login</p>{" "}
+            <p className="text-purple">Login</p>
           </div>
         </div>
 
@@ -81,13 +81,19 @@ const LoginPage = () => {
           <Formik
             initialValues={{ email: "", password: "" }}
             validationSchema={validationSchema}
-            onSubmit={(values, { resetForm }) => {
-              handleLogin(values);
-              resetForm();
+            onSubmit={async (values, { setSubmitting, resetForm }) => {
+              setSubmitting(true); // start submission
+              try {
+                await handleLogin(values); // wait for login
+                resetForm(); // reset fields
+              } finally {
+                setSubmitting(false); // unblock button
+              }
             }}
           >
             {({ isSubmitting }) => (
               <Form className="mx-auto w-[40%] mb-14">
+                {/* Email Field */}
                 <div className="mb-14">
                   <label className="font-semibold ">
                     Email <span className="text-red-500">*</span>
@@ -105,6 +111,7 @@ const LoginPage = () => {
                   />
                 </div>
 
+                {/* Password Field */}
                 <div className="mb-14">
                   <label className="font-semibold ">
                     Password <span className="text-red-500">*</span>
@@ -131,9 +138,11 @@ const LoginPage = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full shadow-lg shadow-blue hover:shadow-none flex items-center justify-center rounded-full bg-yellow mt-10 w-fit py-3 font-semibold hover:bg-purple text-black hover:text-white transition delay-100 duration-150 ease-in-out hover:-translate-y-1 hover:scale-100"
+                  className={`w-full shadow-lg shadow-blue hover:shadow-none flex items-center justify-center rounded-full bg-yellow mt-10 w-fit py-3 font-semibold hover:bg-purple text-black hover:text-white transition delay-100 duration-150 ease-in-out hover:-translate-y-1 hover:scale-100 ${
+                    isSubmitting ? "cursor-not-allowed opacity-70" : ""
+                  }`}
                 >
-                  {isSubmitting ? "Submitting..." : "Sign In"}
+                  {isSubmitting ? "Please wait..." : "Sign In"}
                   <p className="ml-4">
                     <FaArrowRightLong />
                   </p>

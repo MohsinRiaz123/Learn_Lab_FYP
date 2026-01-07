@@ -1,11 +1,19 @@
+// controllers/userController.js
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import fs from "fs";
+import path from "path";
 
 export const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select("-password");
+    const user = await User.findById(req.params.id).select("-password").lean();
+
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Ensure defaults for frontend
+    user.profilePicture = user.profilePicture || "";
+    user.socialLinks = user.socialLinks || { twitter: "", linkedin: "", github: "" };
+
     res.json(user);
   } catch (err) {
     console.error(err);
@@ -31,21 +39,21 @@ export const updateUserProfile = async (req, res) => {
       newPassword,
     } = req.body;
 
-    // Update basic fields
+    // Update personal info
     if (firstName) user.firstName = firstName;
     if (lastName) user.lastName = lastName;
     if (phone) user.phone = phone;
     if (occupation) user.occupation = occupation;
     if (bio) user.bio = bio;
 
-    // Social links
+    // Update social links
     user.socialLinks = {
-      twitter: twitter || user.socialLinks?.twitter,
-      linkedin: linkedin || user.socialLinks?.linkedin,
-      github: github || user.socialLinks?.github,
+      twitter: twitter || user.socialLinks?.twitter || "",
+      linkedin: linkedin || user.socialLinks?.linkedin || "",
+      github: github || user.socialLinks?.github || "",
     };
 
-    // Handle password change
+    // Handle password update
     if (currentPassword && newPassword) {
       const isMatch = await bcrypt.compare(currentPassword, user.password);
       if (!isMatch) return res.status(400).json({ message: "Current password incorrect" });
@@ -54,17 +62,25 @@ export const updateUserProfile = async (req, res) => {
       user.password = await bcrypt.hash(newPassword, salt);
     }
 
-    // Handle profile image upload
-    if (req.file) {
+    // Handle profile picture upload
+    if (req.files && req.files.profilePicture) {
+      const file = req.files.profilePicture[0];
+      const uploadPath = `uploads/profiles/${file.filename}`;
+
       // Delete old image if exists
-      if (user.profileImage && fs.existsSync(user.profileImage)) {
-        fs.unlinkSync(user.profileImage);
+      if (user.profilePicture && fs.existsSync(`uploads/profiles/${user.profilePicture}`)) {
+        fs.unlinkSync(`uploads/profiles/${user.profilePicture}`);
       }
-      user.profileImage = req.file.path;
+
+      user.profilePicture = file.filename;
     }
 
     await user.save();
-    const updatedUser = await User.findById(req.params.id).select("-password");
+
+    const updatedUser = await User.findById(req.params.id).select("-password").lean();
+    updatedUser.profilePicture = updatedUser.profilePicture || "";
+    updatedUser.socialLinks = updatedUser.socialLinks || { twitter: "", linkedin: "", github: "" };
+
     res.json(updatedUser);
   } catch (err) {
     console.error(err);

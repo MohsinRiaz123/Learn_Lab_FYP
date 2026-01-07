@@ -5,8 +5,8 @@ import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 
 const Setting = () => {
-  const user = JSON.parse(localStorage.getItem("user")); // Get logged-in user
-  const userId = user?._id;
+  const user = JSON.parse(localStorage.getItem("user"));
+  const userId = user?.id || user?._id;
 
   const [profile, setProfile] = useState({
     firstName: "",
@@ -39,6 +39,7 @@ const Setting = () => {
 
   const [profileImage, setProfileImage] = useState(null); // preview
   const [profileFile, setProfileFile] = useState(null); // file to upload
+  const [saving, setSaving] = useState(false); // save button state
 
   // Toggle password visibility
   const togglePasswordVisibility = (field) => {
@@ -60,41 +61,45 @@ const Setting = () => {
   };
 
   // Fetch user data on load
-  useEffect(() => {
-    if (!userId) return;
+useEffect(() => {
+  if (!userId) return;
 
-    const fetchUser = async () => {
-      try {
-        const res = await axios.get(`http://localhost:5000/api/auth/user/${userId}`);
-        const data = res.data;
+  const fetchUser = async () => {
+    try {
+      const res = await axios.get(`http://localhost:5000/api/users/${userId}`);
+      const data = res.data;
+console.log("Fetched user data:", data);
+      setProfile({
+        firstName: data.firstName || "",
+        lastName: data.lastName || "",
+        email: data.email || "",
+        phone: data.phone || "",
+        occupation: data.occupation || "",
+        bio: data.bio || "",
+        profilePicture: data.profilePicture || "", // important
+      });
 
-        setProfile({
-          firstName: data.firstName || "",
-          lastName: data.lastName || "",
-          email: data.email || "",
-          phone: data.phone || "",
-          occupation: data.occupation || "",
-          bio: data.bio || "",
-          profilePicture: data.profilePicture || "",
-        });
+      setSocialLinks({
+        twitter: data.socialLinks?.twitter || "",
+        linkedin: data.socialLinks?.linkedin || "",
+        github: data.socialLinks?.github || "",
+      });
 
-        setSocialLinks({
-          twitter: data.twitter || "",
-          linkedin: data.linkedin || "",
-          github: data.github || "",
-        });
+      // ✅ Set profile image if exists, otherwise default
+      setProfileImage(
+        data.profilePicture
+          ? `http://localhost:5000/uploads/profiles/${data.profilePicture}`
+          : "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y"
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to fetch user data");
+    }
+  };
 
-        if (data.profilePicture) {
-          setProfileImage(`http://localhost:5000/uploads/profiles/${data.profilePicture}`);
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error("Failed to fetch user data");
-      }
-    };
+  fetchUser();
+}, [userId]);
 
-    fetchUser();
-  }, [userId]);
 
   // Handle save
   const handleSave = async () => {
@@ -109,6 +114,7 @@ const Setting = () => {
       }
     }
 
+    setSaving(true); // block button
     try {
       const formData = new FormData();
 
@@ -129,7 +135,7 @@ const Setting = () => {
       // Profile picture
       if (profileFile) formData.append("profilePicture", profileFile);
 
-      const res = await axios.put(`http://localhost:5000/api/auth/user/${userId}`, formData, {
+      const res = await axios.put(`http://localhost:5000/api/users/${userId}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -138,6 +144,8 @@ const Setting = () => {
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || "Failed to save profile");
+    } finally {
+      setSaving(false); // unblock button
     }
   };
 
@@ -147,7 +155,10 @@ const Setting = () => {
       <div className="flex items-center space-x-4">
         <div className="w-20 h-20 rounded-full overflow-hidden border">
           <img
-            src={profileImage || "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y"}
+            src={
+              profileImage ||
+              "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y"
+            }
             alt="Profile"
             className="object-cover w-full h-full"
           />
@@ -161,25 +172,43 @@ const Setting = () => {
           >
             Upload Image
           </button>
-          <input id="imageUpload" type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+          <input
+            id="imageUpload"
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
         </div>
       </div>
 
       {[
         { label: "First Name", field: "firstName" },
         { label: "Last Name", field: "lastName" },
+        { label: "Email", field: "email", disabled: true },
         { label: "Phone Number", field: "phone" },
         { label: "Skill/Occupation", field: "occupation" },
-      ].map(({ label, field }) => (
+      ].map(({ label, field, disabled }) => (
         <div key={field} className="flex flex-col">
           <label className="font-medium mb-1">{label}</label>
-          <input type="text" value={profile[field]} onChange={(e) => handleChange(setProfile, field, e.target.value)} className="border rounded px-3 py-2" />
+          <input
+            type="text"
+            value={profile[field] || ""}
+            onChange={(e) => handleChange(setProfile, field, e.target.value)}
+            disabled={disabled}
+            className={`border rounded px-3 py-2 ${disabled ? "bg-gray-100" : ""}`}
+          />
         </div>
       ))}
 
       <div className="flex flex-col">
         <label className="font-medium mb-1">Biography</label>
-        <textarea value={profile.bio} onChange={(e) => handleChange(setProfile, "bio", e.target.value)} rows={4} className="border rounded px-3 py-2" />
+        <textarea
+          value={profile.bio || ""}
+          onChange={(e) => handleChange(setProfile, "bio", e.target.value)}
+          rows={4}
+          className="border rounded px-3 py-2"
+        />
       </div>
     </div>
   );
@@ -198,10 +227,16 @@ const Setting = () => {
             value={passwords[field]}
             onChange={(e) => handleChange(setPasswords, field, e.target.value)}
             className={`border rounded px-3 py-2 pr-10 ${
-              field === "confirm" && passwords.confirm && passwords.new !== passwords.confirm ? "border-red-500" : ""
+              field === "confirm" && passwords.confirm && passwords.new !== passwords.confirm
+                ? "border-red-500"
+                : ""
             }`}
           />
-          <button type="button" onClick={() => togglePasswordVisibility(field)} className="absolute right-3 top-[38px] text-gray-500">
+          <button
+            type="button"
+            onClick={() => togglePasswordVisibility(field)}
+            className="absolute right-3 top-[38px] text-gray-500"
+          >
             {passwordVisibility[field] ? <FaEyeSlash /> : <FaEye />}
           </button>
         </div>
@@ -218,7 +253,13 @@ const Setting = () => {
       ].map(({ label, field }) => (
         <div key={field} className="flex flex-col">
           <label className="font-medium mb-1">{label}</label>
-          <input type="text" value={socialLinks[field]} onChange={(e) => handleChange(setSocialLinks, field, e.target.value)} className="border rounded px-3 py-2" placeholder={`Enter your ${label}`} />
+          <input
+            type="text"
+            value={socialLinks[field] || ""}
+            onChange={(e) => handleChange(setSocialLinks, field, e.target.value)}
+            className="border rounded px-3 py-2"
+            placeholder={`Enter your ${label}`}
+          />
         </div>
       ))}
     </div>
@@ -231,7 +272,13 @@ const Setting = () => {
 
       <div className="flex space-x-6 mb-6">
         {["Personal Info", "Password", "Social Links"].map((tab) => (
-          <button key={tab} onClick={() => setActiveTab(tab)} className={`pb-2 font-medium ${activeTab === tab ? "border-b-4 border-purple text-purple" : "text-gray-600"}`}>
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`pb-2 font-medium ${
+              activeTab === tab ? "border-b-4 border-purple text-purple" : "text-gray-600"
+            }`}
+          >
             {tab}
           </button>
         ))}
@@ -244,8 +291,12 @@ const Setting = () => {
       </div>
 
       <div className="pt-6 text-right">
-        <button onClick={handleSave} className="bg-purple hover:bg-blue-800 text-white px-6 py-2 rounded-md">
-          Save
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className={`px-6 py-2 rounded-md text-white ${saving ? "bg-gray-400" : "bg-purple hover:bg-blue-800"}`}
+        >
+          {saving ? "Saving..." : "Save"}
         </button>
       </div>
     </div>

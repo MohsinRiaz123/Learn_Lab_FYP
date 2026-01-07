@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, default: "" },
     occupation: { type: String, default: "" },
     bio: { type: String, default: "" },
-    profileImage: { type: String, default: "" }, // store URL/path of uploaded image
+    profilePicture: { type: String, default: "" }, // store URL/path of uploaded image
     socialLinks: {
       twitter: { type: String, default: "" },
       linkedin: { type: String, default: "" },
