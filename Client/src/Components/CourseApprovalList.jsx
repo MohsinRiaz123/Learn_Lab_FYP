@@ -1,73 +1,83 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { Card, CardContent, CardHeader, CardTitle } from "./Card"
-import { Button } from "./Button"
-import { Badge } from "./Badge"
-import { Input } from "./Input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./Table"
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "./Card";
+import { Button } from "./Button";
+import { Badge } from "./Badge";
+import { Input } from "./Input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./Table";
 
 export function CourseApprovalList() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const navigate = useNavigate()
-  const [courses, setCourses] = useState([
-    {
-      id: 1,
-      title: "Advanced React Development",
-      instructor: "John Smith",
-      status: "pending",
-      students: 0,
-      date: "2024-01-15",
-    },
-    {
-      id: 2,
-      title: "Machine Learning Basics",
-      instructor: "Sarah Johnson",
-      status: "approved",
-      students: 45,
-      date: "2024-01-10",
-    },
-    {
-      id: 3,
-      title: "Web Design Fundamentals",
-      instructor: "Mike Wilson",
-      status: "rejected",
-      students: 0,
-      date: "2024-01-12",
-    },
-    {
-      id: 4,
-      title: "Python for Beginners",
-      instructor: "Emily Davis",
-      status: "pending",
-      students: 0,
-      date: "2024-01-18",
-    },
-  ])
+  const [searchTerm, setSearchTerm] = useState("");
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState({}); // track which course is updating
+  const navigate = useNavigate();
 
-  const handleApprove = (id) => {
-    setCourses(courses.map((course) => (course.id === id ? { ...course, status: "approved" } : course)))
-    console.log(`Course ${id} approved`)
-  }
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/courses");
+        const data = await res.json();
+        setCourses(data);
+      } catch (err) {
+        console.error("Failed to fetch courses", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCourses();
+  }, []);
 
-  const handleReject = (id) => {
-    setCourses(courses.map((course) => (course.id === id ? { ...course, status: "rejected" } : course)))
-    console.log(`Course ${id} rejected`)
-  }
+  // 🔹 Handle Approve / Reject
+  const updateStatus = async (id, status) => {
+    setUpdating((prev) => ({ ...prev, [id]: status })); // mark course updating
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/courses/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+
+      const updated = await res.json();
+      setCourses((prev) => prev.map((c) => (c._id === updated._id ? updated : c)));
+    } catch (err) {
+      console.error("Failed to update status", err);
+    } finally {
+      setUpdating((prev) => ({ ...prev, [id]: null })); // remove loading
+    }
+  };
 
   const filteredCourses = courses.filter(
     (course) =>
       course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.instructor.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+      course.instructor.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getStatusBadge = (status) => {
     const variants = {
       pending: "warning",
-      approved: "success",
+      active: "success",
       rejected: "error",
-    }
-    return <Badge variant={variants[status]}>{status}</Badge>
-  }
+    };
+    return <Badge variant={variants[status]}>{status}</Badge>;
+  };
+
+  if (loading)
+    return (
+      <Card>
+        <CardContent className="p-6 text-center text-gray-500">
+          Loading courses...
+        </CardContent>
+      </Card>
+    );
 
   return (
     <Card>
@@ -82,6 +92,7 @@ export function CourseApprovalList() {
           />
         </div>
       </CardHeader>
+
       <CardContent>
         <Table>
           <TableHeader>
@@ -90,35 +101,52 @@ export function CourseApprovalList() {
               <TableHead>Instructor</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Date</TableHead>
-               <TableHead>Details</TableHead>
+              <TableHead>Details</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
+
           <TableBody>
             {filteredCourses.map((course) => (
-              <TableRow key={course.id}>
+              <TableRow key={course._id}>
                 <TableCell className="font-medium">{course.title}</TableCell>
                 <TableCell>{course.instructor}</TableCell>
                 <TableCell>{getStatusBadge(course.status)}</TableCell>
-                <TableCell>{course.date}</TableCell>
-                <TableCell><Button
+                <TableCell>
+                  {new Date(course.createdAt).toLocaleDateString()}
+                </TableCell>
+                <TableCell>
+                  <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => navigate(`/admin/courses/${course.id}`)}
+                    onClick={() => navigate(`/admin/courses/${course._id}`)}
                   >
                     View Details
-                  </Button></TableCell>
-                
-                <TableCell>
+                  </Button>
+                </TableCell>
+                <TableCell className="flex space-x-2">
                   {course.status === "pending" && (
-                    <div className="flex space-x-2">
-                      <Button size="sm" onClick={() => handleApprove(course.id)}>
-                        Approve
+                    <>
+                      <Button
+                        size="sm"
+                        onClick={() => updateStatus(course._id, "active")}
+                        disabled={updating[course._id] === "active"}
+                      >
+                        {updating[course._id] === "active"
+                          ? "Approving..."
+                          : "Approve"}
                       </Button>
-                      <Button size="sm" variant="destructive" onClick={() => handleReject(course.id)}>
-                        Reject
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => updateStatus(course._id, "rejected")}
+                        disabled={updating[course._id] === "rejected"}
+                      >
+                        {updating[course._id] === "rejected"
+                          ? "Rejecting..."
+                          : "Reject"}
                       </Button>
-                    </div>
+                    </>
                   )}
                 </TableCell>
               </TableRow>
@@ -127,5 +155,5 @@ export function CourseApprovalList() {
         </Table>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/Card";
 import { Button } from "../../components/Button";
 import { Badge } from "../../components/Badge";
@@ -14,113 +14,124 @@ import {
 
 const InstructorsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [instructors, setInstructors] = useState([
-    {
-      id: 1,
-      name: "John Smith",
-      email: "john@example.com",
-      status: "approved",
-      courses: 3,
-      joinDate: "2024-01-15",
-    },
-    {
-      id: 2,
-      name: "Sarah Johnson",
-      email: "sarah@example.com",
-      status: "pending",
-      courses: 0,
-      joinDate: "2024-01-20",
-    },
-    {
-      id: 3,
-      name: "Mike Wilson",
-      email: "mike@example.com",
-      status: "approved",
-      courses: 5,
-      joinDate: "2024-01-12",
-    },
-    {
-      id: 4,
-      name: "Emily Davis",
-      email: "emily@example.com",
-      status: "rejected",
-      courses: 0,
-      joinDate: "2024-01-18",
-    },
-  ]);
+  const [instructors, setInstructors] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [updatingIds, setUpdatingIds] = useState([]); // Track IDs being updated
+
+  // Fetch instructors from API
+  const fetchInstructors = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/users/instructors");
+      if (!res.ok) throw new Error("Failed to fetch instructors");
+      const data = await res.json();
+      setInstructors(data);
+    } catch (err) {
+      console.error("Error fetching instructors:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInstructors();
+  }, []);
 
   // Approve instructor
-  const handleApprove = (id) => {
-    setInstructors(
-      instructors.map((instructor) =>
-        instructor.id === id
-          ? { ...instructor, status: "approved" }
-          : instructor
-      )
-    );
+  const handleApprove = async (id) => {
+    setUpdatingIds((prev) => [...prev, id]);
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/users/instructors/${id}/status`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "active" }),
+        }
+      );
+      if (!res.ok) throw new Error("Failed to approve instructor");
+      const updatedInstructor = await res.json();
+      setInstructors((prev) =>
+        prev.map((inst) => (inst._id === id ? updatedInstructor : inst))
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUpdatingIds((prev) => prev.filter((updId) => updId !== id));
+    }
   };
 
-  // Reject instructor
-  const handleReject = (id) => {
-    setInstructors(
-      instructors.map((instructor) =>
-        instructor.id === id
-          ? { ...instructor, status: "rejected" }
-          : instructor
-      )
-    );
+  // Suspend instructor
+  const handleSuspend = async (id) => {
+    setUpdatingIds((prev) => [...prev, id]);
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/users/instructors/${id}/status`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "inactive" }),
+        }
+      );
+      if (!res.ok) throw new Error("Failed to suspend instructor");
+      const updatedInstructor = await res.json();
+      setInstructors((prev) =>
+        prev.map((inst) => (inst._id === id ? updatedInstructor : inst))
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUpdatingIds((prev) => prev.filter((updId) => updId !== id));
+    }
   };
 
-  // 🔽 Download Resume
-  const handleDownloadResume = (instructor) => {
-    const resumeContent = `
-Instructor Resume
-
-Name: ${instructor.name}
-Email: ${instructor.email}
-Courses: ${instructor.courses}
-Joined: ${instructor.joinDate}
-    `;
-
-    const blob = new Blob([resumeContent], { type: "application/pdf" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${instructor.name.replace(" ", "_")}_Resume.pdf`;
-    document.body.appendChild(link);
-    link.click();
-
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  // Download uploaded resume
+  const handleDownloadResume = async (id, name) => {
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/users/instructors/${id}/resume`
+      );
+      if (!res.ok) throw new Error("Failed to download resume");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${name.replace(" ", "_")}_Resume.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  // Search filter
+  // Filter instructors by search
   const filteredInstructors = instructors.filter(
-    (instructor) =>
-      instructor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      instructor.email.toLowerCase().includes(searchTerm.toLowerCase())
+    (inst) =>
+      inst.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inst.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inst.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Status badge
+  // Status badge mapping
   const getStatusBadge = (status) => {
     const variants = {
-      pending: "warning",
-      approved: "success",
-      rejected: "error",
+      inactive: "warning",
+      active: "success",
     };
-    return <Badge variant={variants[status]}>{status}</Badge>;
+    const labels = {
+      inactive: "Inactive",
+      active: "Approved",
+    };
+    return <Badge variant={variants[status]}>{labels[status]}</Badge>;
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Instructor Management
-        </h1>
-        <p className="text-gray-600">
-          Manage instructor applications and accounts
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900">Instructor Management</h1>
+        <p className="text-gray-600">Manage instructor applications and accounts</p>
       </div>
 
       <Card>
@@ -137,69 +148,75 @@ Joined: ${instructor.joinDate}
         </CardHeader>
 
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Courses</TableHead>
-                <TableHead>Download Resume</TableHead>
-                <TableHead>Join Date</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+          {loading ? (
+            <p>Loading instructors...</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Resume</TableHead>
+                  <TableHead>Join Date</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
 
-            <TableBody>
-              {filteredInstructors.map((instructor) => (
-                <TableRow key={instructor.id}>
-                  <TableCell className="font-medium">
-                    {instructor.name}
-                  </TableCell>
-                  <TableCell>{instructor.email}</TableCell>
-                  <TableCell>{getStatusBadge(instructor.status)}</TableCell>
-                  <TableCell>{instructor.courses}</TableCell>
-
-                  <TableCell>
-                    <Button
-                      size="sm"
-                      onClick={() => handleDownloadResume(instructor)}
-                    >
-                      Download Resume
-                    </Button>
-                  </TableCell>
-
-                  <TableCell>{instructor.joinDate}</TableCell>
-
-                  <TableCell>
-                    {instructor.status === "pending" && (
-                      <div className="flex gap-2">
+              <TableBody>
+                {filteredInstructors.map((inst) => (
+                  <TableRow key={inst._id}>
+                    <TableCell className="font-medium">
+                      {inst.firstName} {inst.lastName}
+                    </TableCell>
+                    <TableCell>{inst.email}</TableCell>
+                    <TableCell>{getStatusBadge(inst.status)}</TableCell>
+                    <TableCell>
+                      {inst.resume ? (
                         <Button
                           size="sm"
-                          onClick={() => handleApprove(instructor.id)}
+                          onClick={() =>
+                            handleDownloadResume(
+                              inst._id,
+                              `${inst.firstName} ${inst.lastName}`
+                            )
+                          }
                         >
-                          Approve
+                          Download Resume
                         </Button>
+                      ) : (
+                        <span>No Resume</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(inst.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      {inst.status === "inactive" && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleApprove(inst._id)}
+                          disabled={updatingIds.includes(inst._id)}
+                        >
+                          {updatingIds.includes(inst._id) ? "Approving..." : "Approve"}
+                        </Button>
+                      )}
+                      {inst.status === "active" && (
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => handleReject(instructor.id)}
+                          onClick={() => handleSuspend(inst._id)}
+                          disabled={updatingIds.includes(inst._id)}
                         >
-                          Reject
+                          {updatingIds.includes(inst._id) ? "Suspending..." : "Suspend"}
                         </Button>
-                      </div>
-                    )}
-
-                    {instructor.status === "approved" && (
-                      <Button size="sm" variant="outline">
-                        View Profile
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -7,6 +7,16 @@ import path from "path";
 import fs from "fs";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import {
+  getAllStudents,
+  updateStudentStatus,
+  getAllInstructors,
+  updateInstructorStatus,
+  downloadInstructorResume,
+  getAllExperts,
+  updateExpertStatus,
+  addExpert,
+} from "../controllers/userController.js";
 
 const router = express.Router();
 
@@ -19,11 +29,38 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     // filename: <userId>-<timestamp>.<ext>
-    cb(null, `${req.params.id}-${Date.now()}${path.extname(file.originalname)}`);
+    cb(
+      null,
+      `${req.params.id}-${Date.now()}${path.extname(file.originalname)}`
+    );
   },
 });
 
 const upload = multer({ storage });
+
+
+
+/* STUDENT MANAGEMENT (ADMIN) */
+router.get("/students", getAllStudents);
+router.patch("/students/:id/status", updateStudentStatus);
+
+// Instructor management
+router.get("/instructors", getAllInstructors);
+router.patch("/instructors/:id/status", updateInstructorStatus);
+
+// Resume download
+router.get("/instructors/:id/resume", downloadInstructorResume);
+
+// Fetch all industry experts
+router.get("/experts", getAllExperts);
+
+// add new expert
+router.post("/experts", addExpert);
+// Update status of a specific expert
+router.patch("/experts/:id/status", updateExpertStatus);
+
+
+
 
 // ---------------- GET user by ID ----------------
 router.get("/:id", async (req, res) => {
@@ -38,7 +75,11 @@ router.get("/:id", async (req, res) => {
 
     // Ensure profilePicture and socialLinks defaults
     user.profilePicture = user.profilePicture || "";
-    user.socialLinks = user.socialLinks || { twitter: "", linkedin: "", github: "" };
+    user.socialLinks = user.socialLinks || {
+      twitter: "",
+      linkedin: "",
+      github: "",
+    };
 
     res.json(user);
   } catch (err) {
@@ -89,7 +130,9 @@ router.put(
       if (currentPassword && newPassword) {
         const isMatch = await bcrypt.compare(currentPassword, user.password);
         if (!isMatch)
-          return res.status(400).json({ message: "Current password is incorrect" });
+          return res
+            .status(400)
+            .json({ message: "Current password is incorrect" });
 
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(newPassword, salt);
@@ -108,9 +151,15 @@ router.put(
       await user.save();
 
       // Return updated user
-      const updatedUser = await User.findById(req.params.id).select("-password").lean();
+      const updatedUser = await User.findById(req.params.id)
+        .select("-password")
+        .lean();
       updatedUser.profilePicture = updatedUser.profilePicture || "";
-      updatedUser.socialLinks = updatedUser.socialLinks || { twitter: "", linkedin: "", github: "" };
+      updatedUser.socialLinks = updatedUser.socialLinks || {
+        twitter: "",
+        linkedin: "",
+        github: "",
+      };
 
       res.json({ message: "User updated successfully", user: updatedUser });
     } catch (err) {
@@ -119,5 +168,8 @@ router.put(
     }
   }
 );
+
+
+
 
 export default router;

@@ -91,7 +91,7 @@ function App() {
             <Route path="InsCourseDetails/:id" element={<InsCourseDetails />} />
 
             <Route
-              path="GenralCourseDetails"
+              path="GenralCourseDetails/:id"
               element={<GenralCourseDetails />}
             />
             <Route path="setting" element={<InsSetting />} />

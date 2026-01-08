@@ -11,12 +11,19 @@ const userSchema = new mongoose.Schema(
       enum: ["student", "instructor", "industryExpert", "admin"],
       default: "student",
     },
-    resume: { type: String }, // existing field for instructor resume
+    resume: { type: String, default: "" }, // existing field for instructor resume
 
     // New fields for profile settings
     phone: { type: String, default: "" },
     occupation: { type: String, default: "" },
     bio: { type: String, default: "" },
+    status: { type: String, enum: ["active", "inactive"], default: "active" },
+    resume: {
+      data: String, // base64 string
+      contentType: String, // mimetype, e.g., "application/pdf"
+      filename: String, // original file name
+    },
+
     profilePicture: { type: String, default: "" }, // store URL/path of uploaded image
     socialLinks: {
       twitter: { type: String, default: "" },

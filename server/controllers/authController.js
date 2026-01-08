@@ -43,9 +43,7 @@ export const registerStudent = async (req, res) => {
   }
 };
 
-
-// Instructor Registration  
-
+// Register Instructor
 export const registerInstructor = async (req, res) => {
   try {
     console.log("File:", req.file); // debug Multer file upload
@@ -71,7 +69,12 @@ export const registerInstructor = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user without document first
+    // Read file buffer
+    const resumeBuffer = fs.readFileSync(req.file.path);
+    const resumeBase64 = resumeBuffer.toString("base64");
+    const resumeMimeType = req.file.mimetype; // e.g., application/pdf
+
+    // Create user document with resume stored in DB
     const newInstructor = await User.create({
       firstName,
       lastName,
@@ -79,19 +82,16 @@ export const registerInstructor = async (req, res) => {
       password: hashedPassword,
       role,
       instructorNumber,
+      status: "inactive",
+      resume: {
+        data: resumeBase64,
+        contentType: resumeMimeType,
+        filename: req.file.originalname,
+      },
     });
 
-    // Rename file to instructorNumber
-    const ext = path.extname(req.file.originalname);
-    const newFilename = `${instructorNumber}${ext}`;
-    const oldPath = req.file.path;
-    const newPath = path.join("uploads", newFilename);
-
-    fs.renameSync(oldPath, newPath);
-
-    // Update user document with PDF filename
-    newInstructor.document = newFilename;
-    await newInstructor.save();
+    // Delete local file after storing in DB
+    fs.unlinkSync(req.file.path);
 
     return res.status(201).json({
       message: "Instructor registered",
@@ -104,26 +104,39 @@ export const registerInstructor = async (req, res) => {
   }
 };
 
+
 // Login
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "Invalid email or password" });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid email or password" });
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
-    // Return user data (role, id, etc)
+    // 🚫 BLOCK INACTIVE USERS
+    if (user.status === "inactive") {
+      return res.status(403).json({
+        message:
+          "Your ID is inactive. Contact the team if it has been inactive for more than 2 days.",
+      });
+    }
+
     res.status(200).json({
-      id: user._id,
-      email: user.email,
+      _id: user._id,
       role: user.role,
+      email: user.email,
       firstName: user.firstName,
-      lastName: user.lastName
+      lastName: user.lastName,
+      status: user.status,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };

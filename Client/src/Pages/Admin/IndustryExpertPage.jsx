@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -19,128 +19,145 @@ import {
 
 const IndustryExpertPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [showModal, setShowModal] = useState(false);
-
-  const [experts, setExperts] = useState([
-    {
-      id: 1,
-      name: "Ali Khan",
-      email: "ali.khan@industry.com",
-      expertise: "Software Architecture",
-      status: "pending",
-      experience: "8 Years",
-      joinDate: "2024-02-01",
-    },
-    {
-      id: 2,
-      name: "Fatima Noor",
-      email: "fatima@industry.com",
-      expertise: "Data Science",
-      status: "approved",
-      experience: "6 Years",
-      joinDate: "2024-01-22",
-    },
-    {
-      id: 3,
-      name: "Usman Tariq",
-      email: "usman@industry.com",
-      expertise: "Cloud Computing",
-      status: "inactive",
-      experience: "10 Years",
-      joinDate: "2024-01-10",
-    },
-  ]);
-
-  // New expert form
+  const [experts, setExperts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [updatingIds, setUpdatingIds] = useState([]); // track approve/suspend actions
+  const [showModal, setShowModal] = useState(false); // for Add Expert popup
   const [newExpert, setNewExpert] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
-    expertise: "",
-    experience: "",
+    occupation: "",
+    password: "",
   });
 
-  // Add expert
-  const handleAddExpert = () => {
-    if (
-      !newExpert.name ||
-      !newExpert.email ||
-      !newExpert.expertise ||
-      !newExpert.experience
-    ) {
+  const [adding, setAdding] = useState(false); // block Add Expert button
+
+  // Fetch experts from API
+  const fetchExperts = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/users/experts");
+      if (!res.ok) throw new Error("Failed to fetch experts");
+      const data = await res.json();
+      setExperts(data);
+      console.log("Fetched experts:", data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchExperts();
+  }, []);
+
+  // Approve / Activate
+  const handleApprove = async (id) => {
+    setUpdatingIds((prev) => [...prev, id]);
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/users/experts/${id}/status`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "active" }),
+        }
+      );
+      if (!res.ok) throw new Error("Failed to approve expert");
+      const updatedExpert = await res.json();
+      setExperts((prev) =>
+        prev.map((exp) => (exp._id === id ? updatedExpert : exp))
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUpdatingIds((prev) => prev.filter((updId) => updId !== id));
+    }
+  };
+
+  // Suspend / Inactivate
+  const handleSuspend = async (id) => {
+    setUpdatingIds((prev) => [...prev, id]);
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/users/experts/${id}/status`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "inactive" }),
+        }
+      );
+      if (!res.ok) throw new Error("Failed to suspend expert");
+      const updatedExpert = await res.json();
+      setExperts((prev) =>
+        prev.map((exp) => (exp._id === id ? updatedExpert : exp))
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUpdatingIds((prev) => prev.filter((updId) => updId !== id));
+    }
+  };
+
+  // Add new expert
+  const handleAddExpert = async () => {
+    const { firstName, lastName, email, occupation, password } = newExpert;
+
+    if (!firstName || !lastName || !email || !occupation || !password) {
       alert("All fields are required");
       return;
     }
 
-    setExperts([
-      ...experts,
-      {
-        id: Date.now(),
-        ...newExpert,
-        status: "pending",
-        joinDate: new Date().toISOString().split("T")[0],
-      },
-    ]);
+    setAdding(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/users/experts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newExpert),
+      });
 
-    setNewExpert({ name: "", email: "", expertise: "", experience: "" });
-    setShowModal(false);
+      if (!res.ok) throw new Error("Failed to add expert");
+
+      const addedExpert = await res.json();
+      setExperts((prev) => [addedExpert, ...prev]);
+
+      setNewExpert({
+        firstName: "",
+        lastName: "",
+        email: "",
+        occupation: "",
+        password: "",
+      });
+      setShowModal(false);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to add expert");
+    } finally {
+      setAdding(false);
+    }
   };
 
-  // Approve
-  const handleApprove = (id) => {
-    setExperts(
-      experts.map((expert) =>
-        expert.id === id ? { ...expert, status: "approved" } : expert
-      )
-    );
-  };
-
-  // Reject
-  const handleReject = (id) => {
-    setExperts(
-      experts.map((expert) =>
-        expert.id === id ? { ...expert, status: "rejected" } : expert
-      )
-    );
-  };
-
-  // Toggle Active / Inactive
-  const toggleActiveStatus = (id) => {
-    setExperts(
-      experts.map((expert) =>
-        expert.id === id
-          ? {
-              ...expert,
-              status:
-                expert.status === "approved" ? "inactive" : "approved",
-            }
-          : expert
-      )
-    );
-  };
-
-  // Delete
-  const handleDelete = (id) => {
-    if (!window.confirm("Delete this expert?")) return;
-    setExperts(experts.filter((expert) => expert.id !== id));
-  };
-
-  // Filter
+  // Filter experts safely
   const filteredExperts = experts.filter(
-    (expert) =>
-      expert.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      expert.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      expert.expertise.toLowerCase().includes(searchTerm.toLowerCase())
+    (exp) =>
+      (exp.name?.toLowerCase() ?? "").includes(searchTerm.toLowerCase()) ||
+      (exp.email?.toLowerCase() ?? "").includes(searchTerm.toLowerCase()) ||
+      (exp.expertise?.toLowerCase() ?? "").includes(searchTerm.toLowerCase())
   );
 
-  // Badge
+  // Status badge
   const getStatusBadge = (status) => {
     const variants = {
-      pending: "warning",
-      approved: "success",
-      rejected: "error",
-      inactive: "secondary",
+      active: "success",
+      inactive: "warning",
     };
-    return <Badge variant={variants[status]}>{status}</Badge>;
+    const labels = {
+      active: "active",
+      inactive: "inactive",
+    };
+    return <Badge variant={variants[status]}>{labels[status]}</Badge>;
   };
 
   return (
@@ -172,103 +189,88 @@ const IndustryExpertPage = () => {
         </CardHeader>
 
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Expertise</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Experience</TableHead>
-                <TableHead>Join Date</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {filteredExperts.map((expert) => (
-                <TableRow key={expert.id}>
-                  <TableCell className="font-medium">{expert.name}</TableCell>
-                  <TableCell>{expert.email}</TableCell>
-                  <TableCell>{expert.expertise}</TableCell>
-                  <TableCell>{getStatusBadge(expert.status)}</TableCell>
-                  <TableCell>{expert.experience}</TableCell>
-                  <TableCell>{expert.joinDate}</TableCell>
-
-                  <TableCell>
-                    {expert.status === "pending" && (
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => handleApprove(expert.id)}>
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleReject(expert.id)}
-                        >
-                          Reject
-                        </Button>
-                      </div>
-                    )}
-
-                    {expert.status === "approved" && (
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => toggleActiveStatus(expert.id)}
-                        >
-                          Active
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(expert.id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    )}
-
-                    {expert.status === "inactive" && (
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => toggleActiveStatus(expert.id)}
-                        >
-                          Activate
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(expert.id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    )}
-                  </TableCell>
+          {loading ? (
+            <p>Loading experts...</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Expertise</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Join Date</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+
+              <TableBody>
+                {filteredExperts.map((exp) => (
+                  <TableRow key={exp._id}>
+                    <TableCell className="font-medium">
+                      {exp.firstName} {exp.lastName}
+                    </TableCell>
+                    <TableCell>{exp.email}</TableCell>
+                    <TableCell>{exp.occupation}</TableCell>
+                    <TableCell>{getStatusBadge(exp.status)}</TableCell>
+                    <TableCell>
+                      {new Date(exp.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      {exp.status === "inactive" && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleApprove(exp._id)}
+                          disabled={updatingIds.includes(exp._id)}
+                        >
+                          {updatingIds.includes(exp._id)
+                            ? "Activating..."
+                            : "Approve"}
+                        </Button>
+                      )}
+
+                      {exp.status === "active" && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleSuspend(exp._id)}
+                          disabled={updatingIds.includes(exp._id)}
+                        >
+                          {updatingIds.includes(exp._id)
+                            ? "Suspending..."
+                            : "Suspend"}
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
       {/* Add Expert Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg w-full max-w-md space-y-4">
             <h2 className="text-xl font-bold">Add New Expert</h2>
-
             <Input
-              placeholder="Full Name"
-              value={newExpert.name}
+              placeholder="First Name"
+              value={newExpert.firstName}
               onChange={(e) =>
-                setNewExpert({ ...newExpert, name: e.target.value })
+                setNewExpert({ ...newExpert, firstName: e.target.value })
               }
             />
+
+            <Input
+              placeholder="Last Name"
+              value={newExpert.lastName}
+              onChange={(e) =>
+                setNewExpert({ ...newExpert, lastName: e.target.value })
+              }
+            />
+
             <Input
               placeholder="Email"
               value={newExpert.email}
@@ -276,18 +278,21 @@ const IndustryExpertPage = () => {
                 setNewExpert({ ...newExpert, email: e.target.value })
               }
             />
+
             <Input
               placeholder="Expertise"
-              value={newExpert.expertise}
+              value={newExpert.occupation}
               onChange={(e) =>
-                setNewExpert({ ...newExpert, expertise: e.target.value })
+                setNewExpert({ ...newExpert, occupation: e.target.value })
               }
             />
+
             <Input
-              placeholder="Experience (e.g. 5 Years)"
-              value={newExpert.experience}
+              type="password"
+              placeholder="Password"
+              value={newExpert.password}
               onChange={(e) =>
-                setNewExpert({ ...newExpert, experience: e.target.value })
+                setNewExpert({ ...newExpert, password: e.target.value })
               }
             />
 
@@ -295,7 +300,9 @@ const IndustryExpertPage = () => {
               <Button variant="outline" onClick={() => setShowModal(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleAddExpert}>Add Expert</Button>
+              <Button onClick={handleAddExpert} disabled={adding}>
+                {adding ? "Adding..." : "Add Expert"}
+              </Button>
             </div>
           </div>
         </div>

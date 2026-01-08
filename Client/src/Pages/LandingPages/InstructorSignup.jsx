@@ -64,6 +64,7 @@ const InstructorSignup = () => {
       formData.append("password", values.password);
       formData.append("document", values.document);
       formData.append("role", "instructor");
+      formData.append("status", "inactive");
 
       const response = await fetch(
         "http://localhost:5000/api/auth/instructor-signup",

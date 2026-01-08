@@ -1,79 +1,105 @@
-import React from "react";
-import { FaStar, FaUser, FaCalendarAlt, FaCheckCircle } from "react-icons/fa";
+import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 const CourseViewDetails = () => {
+   const { id } = useParams();
+
+  const [course, setCourse] = useState(null);
+
+  /* ================= FETCH COURSE BY ID ================= */
+  useEffect(() => {
+    if (!id) return;
+    const fetchCourse = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/courses/${id}`);
+        const data = await res.json();
+        setCourse(data);
+        setCourse({
+          ...data,
+          image: data.image
+            ? `http://localhost:5000/api/courses/${id}/image`
+            : "",
+          video: data.video
+            ? `http://localhost:5000/api/courses/${id}/video`
+            : "",
+        });
+      } catch (err) {
+        console.error("Failed to load course", err);
+      }
+    };
+
+    fetchCourse();
+  }, [id]);
+  if (!course) return <p className="text-center mt-10">Loading...</p>;
+
+  /* ================= UI ================= */
   return (
-    <div className="max-w-5xl mx-auto p-4">
+    <div className="max-w-4xl mx-auto p-6 bg-white shadow-xl rounded-2xl border border-gray-200">
 
-      {/* Banner */}
-      <div className="relative bg-gradient-to-r from-orange-400 to-yellow-300 rounded-2xl p-6 text-white mb-8">
-        <div className="flex flex-col md:flex-row items-center justify-between">
-          <div className="space-y-3">
-            <div className="flex items-center space-x-3">
-              <span className="bg-white text-orange-500 font-semibold px-3 py-1 rounded-full">
-                Expert
-              </span>
-              <span className="bg-white text-orange-500 font-semibold px-3 py-1 rounded-full">
-                Laravel Pro
-              </span>
-            </div>
 
-            <h2 className="text-3xl md:text-4xl font-bold max-w-xl">
-              Resolving Conflicts Between Designers And Engineers
-            </h2>
+      {/* Title */}
+      <div className="mb-5">
+        <label className="font-semibold text-gray-700">Title</label>
 
-            <div className="flex items-center text-sm space-x-4 mt-2">
-              <span className="flex items-center">
-                <FaStar className="mr-1 text-yellow-300" /> 4.5 Reviews
-              </span>
-              <span className="flex items-center">
-                <FaCalendarAlt className="mr-1" /> 24/07/2024
-              </span>
-              <span className="flex items-center">
-                <FaUser className="mr-1" /> 2,250 Students
-              </span>
-            </div>
-          </div>
-
-          <img
-            src="https://i.imgur.com/Um5g1L5.png"
-            alt="Instructor"
-            className="w-48 h-auto mt-6 md:mt-0"
-          />
-        </div>
+          <p className="mt-1 text-gray-800">{course.title}</p>
       </div>
 
-      {/* Content */}
-      <div className="bg-white p-6 rounded-xl shadow-md">
-        <h3 className="text-xl font-semibold mb-2">Course Description</h3>
-        <p className="text-gray-600 mb-4">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. This course
-          helps designers and engineers collaborate effectively.
-        </p>
+      {/* Instructor */}
+      <div className="mb-5">
+        <label className="font-semibold text-gray-700">Instructor</label>
+       <p className="mt-1 text-gray-800">{course.instructor}</p>
+      </div>
 
-        <h3 className="text-xl font-semibold mb-2">Instructor</h3>
-        <p className="text-gray-600 mb-4">Ahmad Bilal</p>
+      {/* Date */}
+      <div className="mb-5">
+        <label className="font-semibold text-gray-700">Date</label>
+       <p className="mt-1 text-gray-800">{course.date?.slice(0, 10)}</p>
+      </div>
 
-        <h4 className="text-lg font-semibold mb-3">
-          What you'll learn in this course?
-        </h4>
+      {/* Description */}
+      <div className="mb-5">
+        <label className="font-semibold text-gray-700">Description</label>
+    <p className="mt-1 text-gray-800">{course.description}</p>
+      </div>
 
-        <ul className="space-y-3">
-          {[
-            "Work with color & gradients",
-            "Professional UI techniques",
-            "Design collaboration skills",
-            "Better team communication",
-          ].map((item) => (
-            <li key={item} className="flex items-center">
-              <FaCheckCircle className="text-green-500 mr-2" />
-              {item}
-            </li>
+      {/* Skills */}
+      <div className="mb-6">
+        <label className="font-semibold text-gray-700">
+          Skills You'll Learn
+        </label>
+
+        <div className="mt-2 space-y-2">
+          {course.skills.map((skill, index) => (
+            <div key={index}>
+           <li className="mt-1 text-gray-800">{skill}</li>
+            </div>
           ))}
-        </ul>
+        </div>
+
+      </div>
+
+      {/* Image */}
+      <div className="mb-6">
+        <label className="font-semibold text-gray-700">Course Image</label>
+
+        <img
+          src={course.image}
+          alt="Course"
+          className="mt-3 max-w-52 max-h-52 object-cover rounded-xl shadow"
+        />
+      </div>
+
+      {/* Video */}
+      <div>
+        <label className="font-semibold text-gray-700">Course Video</label>
+
+        <video
+          controls
+          src={course.video}
+          className="mt-3 w-full rounded-xl shadow"
+        />
       </div>
     </div>
   );
 };
-
 export default CourseViewDetails;

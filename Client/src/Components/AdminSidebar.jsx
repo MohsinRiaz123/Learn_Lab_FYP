@@ -1,7 +1,7 @@
-import { Link, useLocation } from "react-router-dom"
-import { FiLogOut } from "react-icons/fi"
+import { Link, useLocation } from "react-router-dom";
+import { FiLogOut } from "react-icons/fi";
 export function Sidebar() {
-  const location = useLocation()
+  const location = useLocation();
 
   const menuItems = [
     { path: "/Admin", label: "Dashboard", icon: "📊" },
@@ -9,9 +9,8 @@ export function Sidebar() {
     { path: "/Admin/students", label: "Students", icon: "👥" },
     { path: "/Admin/instructors", label: "Instructors", icon: "👨‍🏫" },
     { path: "/Admin/industry-experts", label: "Industry Experts", icon: "💼" },
-    { path: "/Admin/settings", label: "Settings", icon: "⚙️" },
-    { path: "/", label: "Logout", icon: <FiLogOut/> },
-  ]
+    { path: "/", label: "Logout", icon: <FiLogOut /> },
+  ];
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 h-full">
@@ -25,8 +24,15 @@ export function Sidebar() {
             key={item.path}
             to={item.path}
             className={`flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 transition-colors ${
-              location.pathname === item.path ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600" : ""
+              location.pathname === item.path
+                ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                : ""
             }`}
+            onClick={() => {
+              if (item.label === "Logout") {
+                localStorage.clear(); // clear all local storage
+              }
+            }}
           >
             <span className="mr-3 text-lg">{item.icon}</span>
             {item.label}
@@ -34,5 +40,5 @@ export function Sidebar() {
         ))}
       </nav>
     </div>
-  )
+  );
 }

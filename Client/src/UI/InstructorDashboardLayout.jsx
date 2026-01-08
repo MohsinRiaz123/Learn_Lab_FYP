@@ -36,38 +36,47 @@ const InstructorDashboardLayout = () => {
     { name: "Logout", path: "/", icon: <IoLogOut /> },
   ];
 
-const localUser = JSON.parse(localStorage.getItem("user"));
+  const localUser = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
     const fetchUserData = async () => {
       if (!localUser?.id) return;
 
       try {
-        const res = await fetch(`http://localhost:5000/api/users/${localUser.id}`);
+        const res = await fetch(
+          `http://localhost:5000/api/users/${localUser.id}`
+        );
         if (!res.ok) throw new Error("Failed to fetch user data");
         const data = await res.json();
-
+        console.log("user data", data);
         setUserInfo({
           name: `${data.firstName || "N/A"} ${data.lastName || "N/A"}`,
-          img: data.profileImage || profile, // fallback to default profile
+          img: data.profilePicture
+            ? `http://localhost:5000/uploads/profiles/${data.profilePicture}`
+            : profile,
         });
       } catch (err) {
         console.error("Error fetching user:", err);
         setUserInfo({
-          name: `${localUser.firstName || "N/A"} ${localUser.lastName || "N/A"}`,
+          name: `${localUser.firstName || "N/A"} ${
+            localUser.lastName || "N/A"
+          }`,
           img: profile,
         });
       }
     };
 
     fetchUserData();
-  }, [  ]);
+  }, []);
+
   return (
     <div className="">
       {/* ----------------Header----------------------- */}
       <div className="bg-gradient-to-r from-blue to-purple text-white">
         <div className=" text-center pt-10">
-          <h2 className="text-4xl font-bold mt-1">Learn With {userInfo.name}</h2>
+          <h2 className="text-4xl font-bold mt-1">
+            Learn With {userInfo.name}
+          </h2>
         </div>
         <div className="flex justify-around">
           <div className="   flex items-center ">
@@ -80,7 +89,6 @@ const localUser = JSON.parse(localStorage.getItem("user"));
             </div>
             <div>
               <h2 className="text-xl font-semibold ">{userInfo.name}</h2>
-             
             </div>
           </div>
           <div>
@@ -126,11 +134,11 @@ const localUser = JSON.parse(localStorage.getItem("user"));
                       : "text-gray-700 hover:text-purple"
                   }`
                 }
-                      onClick={() => {
-        if (item.name === "Logout") {
-          localStorage.clear(); // clear all local storage
-        }
-      }}
+                onClick={() => {
+                  if (item.name === "Logout") {
+                    localStorage.clear(); // clear all local storage
+                  }
+                }}
               >
                 {item.icon} {item.name}
               </NavLink>
